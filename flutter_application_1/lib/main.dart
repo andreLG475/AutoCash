@@ -7,116 +7,161 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      debugShowCheckedModeBanner: false,
+      title: 'Car Dashboard',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        primarySwatch: Colors.red,
+        scaffoldBackgroundColor: Colors.grey[200],
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const MainScreen(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
+class MainScreen extends StatelessWidget {
+  const MainScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
+    final List<Map<String, dynamic>> carros = [
+      {
+        "nome": "PEUGEOT 206",
+        "imagem": "https://i.pinimg.com/1200x/37/83/0b/37830b80bb58fdbbe09550abe626b796.jpg", // Link temporário simulando o image.asset
+        "gasto": "500",
+        "detalhes": [
+          "Troca de óleo: R\$ 10,00",
+          "Pneus novos: R\$ 200,00",
+          "Vitrificação do farol: R\$ 100,00",
+          "Outros: R\$ 190,00"
+        ]
+      },
+      {
+        "nome": "PEUGEOT 208",
+        "imagem": "https://i.pinimg.com/736x/4e/39/82/4e39824343598a34100c493feda8b05c.jpg",
+        "gasto": "500",
+        "detalhes": [
+          "Troca de óleo: R\$ 10,00",
+          "Pneus novos: R\$ 200,00",
+          "Vitrificação do farol: R\$ 100,00",
+          "Outros: R\$ 190,00"
+        ]
+      },
+      {
+        "nome": "PEUGEOT 306",
+        "imagem": "https://onlycars.com.br/wp-content/uploads/2013/02/306.jpg",
+        "gasto": "500",
+        "detalhes": [
+          "Troca de óleo: R\$ 10,00",
+          "Pneus novos: R\$ 200,00",
+          "Vitrificação do farol: R\$ 100,00",
+          "Outros: R\$ 190,00"
+        ]
+      },
+    ];
+
+    // Estrutura Base: Scaffold
     return Scaffold(
       appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
+        backgroundColor: Colors.redAccent[700],
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.exit_to_app, color: Colors.white),
+          onPressed: () {},
         ),
+        actions: [
+          const Padding(
+            padding: EdgeInsets.only(right: 16.0),
+            child: CircleAvatar(
+              backgroundColor: Colors.transparent,
+              child: Icon(Icons.account_circle, color: Colors.white, size: 35),
+            ),
+          ),
+        ],
+      ),
+      body: ListView.builder(
+        padding: const EdgeInsets.all(16.0),
+        itemCount: carros.length,
+        itemBuilder: (context, index) {
+          final carro = carros[index];
+
+          return Card(
+            elevation: 4,
+            margin: const EdgeInsets.only(bottom: 24.0),
+            clipBehavior: Clip.antiAlias,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(
+                  color: Colors.redAccent[700],
+                  padding: const EdgeInsets.symmetric(vertical: 12.0),
+                  child: Text(
+                    carro["nome"],
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ),
+                
+                Image.network(
+                  carro["imagem"],
+                  height: 220,
+                  fit: BoxFit.cover,
+                ),
+
+                Container(
+                  color: Colors.grey[300],
+                  padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 16.0),
+                  child: Text(
+                    "GASTO MENSAL ATUAL: R\$ ${carro['gasto']}",
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+
+                Container(
+                  color: Colors.grey[400],
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: carro["detalhes"].map<Widget>((detalhe) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8.0),
+                        child: Text(
+                          detalhe,
+                          style: const TextStyle(
+                            color: Colors.black87,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
+        onPressed: () {},
+        backgroundColor: Colors.grey[300],
+        foregroundColor: Colors.black,
         child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+      ),
     );
   }
 }
