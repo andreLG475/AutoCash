@@ -53,7 +53,7 @@ class AddExpensePage extends StatelessWidget {
 
   Widget _buildLabelAndField(String label, String hint, {int maxLines = 1}) {
     return Column(
-      cross CrossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(height: 6),

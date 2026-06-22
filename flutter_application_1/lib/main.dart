@@ -1,4 +1,12 @@
 import 'package:flutter/material.dart';
+import 'adicionar_carro.dart';
+import 'adicionar_pagamento.dart';
+import 'login.dart';
+import 'registrar.dart';
+import 'visualizar_pagamento.dart';
+import 'visualizar_veiculo.dart';
+import 'exercise_all.dart';
+import 'package:flutter/foundation.dart';
 
 void main() {
   runApp(const MyApp());
@@ -16,7 +24,17 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.red,
         scaffoldBackgroundColor: Colors.grey[200],
       ),
-      home: const MainScreen(),
+      initialRoute: kDebugMode ? '/exercise' : '/login',
+      routes: {
+        '/login': (context) => const LoginPage(),
+        '/register': (context) => const RegisterPage(),
+        '/home': (context) => const MainScreen(),
+        '/exercise': (context) => const ExerciseAllPage(),
+        '/add-car': (context) => const AddCarPage(),
+        '/add-expense': (context) => const AddExpensePage(),
+        '/view-expense': (context) => const ViewExpensePage(),
+        '/vehicle-expenses': (context) => const VeiculoGastosScreen(),
+      },
     );
   }
 }
@@ -120,6 +138,7 @@ class MainScreen extends StatelessWidget {
                 child: InkWell(
                   onTap: () {
                     print("Card do ${carro['nome']} clicado! Abrindo detalhes...");
+                    Navigator.pushNamed(context, '/vehicle-expenses');
                   },
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -185,7 +204,7 @@ class MainScreen extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          print("Adicionar novo carro clicado");
+          Navigator.pushNamed(context, '/add-car');
         },
         backgroundColor: Colors.grey[300],
         foregroundColor: Colors.black,
