@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'cadastro_veiculos.dart';
 import 'cadastro_gastos.dart';
+import 'editar_usuario.dart';
 import 'login.dart';
 import 'registrar.dart';
 import 'visualizacao_gasto.dart';
@@ -34,6 +35,7 @@ class MyApp extends StatelessWidget {
         '/add-expense': (context) => const CadastroGastosPage(),
         '/view-expense': (context) => const VisualizacaoGastoPage(),
         '/vehicle-expenses': (context) => const VisualizarVeiculoPage(),
+        '/edit-user': (context) => const AccountPage(),
       },
     );
   }
@@ -98,7 +100,7 @@ class MainScreen extends StatelessWidget {
         leading: IconButton(
           icon: const Icon(Icons.exit_to_app, color: Colors.white),
           onPressed: () {
-            debugPrint("Botão Sair clicado");
+            Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
           },
         ),
         actions: [
@@ -107,7 +109,7 @@ class MainScreen extends StatelessWidget {
             child: InkWell(
               borderRadius: BorderRadius.circular(20),
               onTap: () {
-                debugPrint("Perfil/Avatar clicado! Ir para página de perfil no futuro.");
+                Navigator.pushNamed(context, '/edit-user');
               },
               child: const CircleAvatar(
                 backgroundColor: Colors.transparent,

@@ -34,15 +34,21 @@ class _VisualizacaoGastoPageState extends State<VisualizacaoGastoPage> {
           IconButton(
             icon: const Icon(Icons.exit_to_app, color: Colors.white),
             onPressed: () {
-              debugPrint("Sair");
+              Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
             },
           ),
           // Avatar na barra superior
-          const Padding(
-            padding: EdgeInsets.only(right: 16.0),
-            child: CircleAvatar(
-              backgroundColor: Colors.transparent,
-              child: Icon(Icons.account_circle, color: Colors.white, size: 35),
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: () {
+                Navigator.pushNamed(context, '/edit-user');
+              },
+              child: const CircleAvatar(
+                backgroundColor: Colors.transparent,
+                child: Icon(Icons.account_circle, color: Colors.white, size: 35),
+              ),
             ),
           ),
         ],
@@ -57,7 +63,7 @@ class _VisualizacaoGastoPageState extends State<VisualizacaoGastoPage> {
                 // Container/Card principal interno que envelopa o gasto
                 padding: const EdgeInsets.all(16.0),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF9F9F9), // Fundo levemente contrastante
+                  color:Colors.grey[200], // Fundo levemente contrastante
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(

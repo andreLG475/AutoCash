@@ -10,32 +10,22 @@ class AccountPage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.redAccent[700], // Barra vermelha do AutoCash
         elevation: 0,
+        centerTitle: true,
+        // Título AUTOCASH adicionado
+        title: const Text(
+          "autocash",
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.5,
+          ),
+        ),
         // Botão de voltar (seta)
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        actions: [
-          // Ícone de sair
-          IconButton(
-            icon: const Icon(Icons.exit_to_app, color: Colors.white),
-            onPressed: () {
-              debugPrint("Sair da conta");
-            },
-          ),
-          // Avatar de perfil na AppBar
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(20),
-              onTap: () {},
-              child: const CircleAvatar(
-                backgroundColor: Colors.transparent,
-                child: Icon(Icons.account_circle, color: Colors.white, size: 35),
-              ),
-            ),
-          ),
-        ],
+        // Ícones removidos das actions conforme solicitado
       ),
       body: SafeArea(
         child: Center(
@@ -56,9 +46,9 @@ class AccountPage extends StatelessWidget {
                         const Icon(
                           Icons.account_circle,
                           size: 140,
-                          color: Colors.black, // Cor preta conforme a imagem
+                          color: Colors.black, // Cor preta
                         ),
-                        // Botão flutuante de edição (Lápis)
+                        // Botão flutuante de edição (Lápis) agora como IconButton
                         Positioned(
                           bottom: 10,
                           right: 10,
@@ -68,11 +58,18 @@ class AccountPage extends StatelessWidget {
                               shape: BoxShape.circle,
                               border: Border.all(color: Colors.white, width: 3), // Borda branca para destacar
                             ),
-                            padding: const EdgeInsets.all(6),
-                            child: const Icon(
-                              Icons.edit,
-                              size: 20,
-                              color: Colors.black87,
+                            child: IconButton(
+                              padding: const EdgeInsets.all(6),
+                              constraints: const BoxConstraints(),
+                              icon: const Icon(
+                                Icons.edit,
+                                size: 20,
+                                color: Colors.black87,
+                              ),
+                              onPressed: () {
+                                // Ação para trocar a foto
+                                print("Trocar foto clicado");
+                              },
                             ),
                           ),
                         ),
@@ -95,21 +92,21 @@ class AccountPage extends StatelessWidget {
 
                   // --- CAMPOS DE DADOS ---
                   
-                  // Campo 1: Email (Apenas leitura)
+                  // Campo 1: Email (Agora editável)
                   _buildLabelAndField(
                     label: 'Email:',
                     initialValue: 'Meuturbo12309@gmail.com',
                     obscureText: false,
-                    readOnly: true, // Bloqueado para edição
+                    readOnly: false, 
                   ),
                   const SizedBox(height: 20),
 
-                  // Campo 2: Senha (Apenas leitura, texto oculto)
+                  // Campo 2: Senha (Agora editável)
                   _buildLabelAndField(
                     label: 'Senha:',
                     initialValue: '1234567', // O obscureText vai transformar em XXXXXXX / bolinhas
                     obscureText: true,
-                    readOnly: true, // Bloqueado para edição
+                    readOnly: false, 
                   ),
                   const SizedBox(height: 20),
 
@@ -118,7 +115,7 @@ class AccountPage extends StatelessWidget {
                     label: 'Nome de usuario:',
                     initialValue: 'Usuário 1',
                     obscureText: false,
-                    readOnly: false, // Livre para edição
+                    readOnly: false, 
                   ),
                 ],
               ),
@@ -155,7 +152,7 @@ class AccountPage extends StatelessWidget {
           readOnly: readOnly,
           style: TextStyle(
             fontSize: 16, 
-            color: readOnly ? Colors.black54 : Colors.black, // Deixa o texto sutilmente mais claro se não for editável
+            color: readOnly ? Colors.black54 : Colors.black, 
             fontWeight: readOnly ? FontWeight.w600 : FontWeight.normal,
           ),
           decoration: InputDecoration(
@@ -172,7 +169,7 @@ class AccountPage extends StatelessWidget {
               borderRadius: BorderRadius.circular(14),
               borderSide: const BorderSide(color: Colors.black54, width: 1),
             ),
-            // Borda de foco (só aparece nos campos que podem ser editados)
+            // Borda de foco 
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
               borderSide: BorderSide(

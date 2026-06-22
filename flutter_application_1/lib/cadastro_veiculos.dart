@@ -34,7 +34,7 @@ class _CadastroVeiculosPageState extends State<CadastroVeiculosPage> {
           IconButton(
             icon: const Icon(Icons.exit_to_app, color: Colors.white),
             onPressed: () {
-              debugPrint("Botão Sair clicado");
+              Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
             },
           ),
           Padding(
@@ -42,7 +42,7 @@ class _CadastroVeiculosPageState extends State<CadastroVeiculosPage> {
             child: InkWell(
               borderRadius: BorderRadius.circular(20),
               onTap: () {
-                debugPrint("Perfil/Avatar clicado!");
+                Navigator.pushNamed(context, '/edit-user');
               },
               child: const CircleAvatar(
                 backgroundColor: Colors.transparent,

@@ -20,7 +20,7 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[200], // Cor de fundo idêntica à MainScreen
+      backgroundColor: Colors.grey[300], // Cor de fundo idêntica à MainScreen
       appBar: AppBar(
         backgroundColor: Colors.redAccent[700], // Mesma cor vermelha da MainScreen
         elevation: 0,
@@ -41,7 +41,7 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
           IconButton(
             icon: const Icon(Icons.exit_to_app, color: Colors.white),
             onPressed: () {
-              debugPrint("Botão Sair clicado");
+              Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
             },
           ),
           Padding(
@@ -49,7 +49,7 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
             child: InkWell(
               borderRadius: BorderRadius.circular(20),
               onTap: () {
-                debugPrint("Perfil/Avatar clicado!");
+                Navigator.pushNamed(context, '/edit-user');
               },
               child: const CircleAvatar(
                 backgroundColor: Colors.transparent,
@@ -166,8 +166,7 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
                                     child: InkWell(
                                       borderRadius: BorderRadius.circular(8),
                                       onTap: () {
-                                        debugPrint("Acessando detalhes de: ${gasto['descricao']}");
-                                        // Navegar para detalhes ou edição do gasto aqui
+                                        Navigator.pushNamed(context, '/view-expense');
                                       },
                                       child: Padding(
                                         padding: const EdgeInsets.symmetric(
