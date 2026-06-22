@@ -11,7 +11,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Car Dashboard',
+      title: 'AutoCash',
       theme: ThemeData(
         primarySwatch: Colors.red,
         scaffoldBackgroundColor: Colors.grey[200],
@@ -29,7 +29,7 @@ class MainScreen extends StatelessWidget {
     final List<Map<String, dynamic>> carros = [
       {
         "nome": "PEUGEOT 206",
-        "imagem": "https://i.pinimg.com/1200x/37/83/0b/37830b80bb58fdbbe09550abe626b796.jpg", // Link temporário simulando o image.asset
+        "imagem": "https://i.pinimg.com/1200x/37/83/0b/37830b80bb58fdbbe09550abe626b796.jpg",
         "gasto": "500",
         "detalhes": [
           "Troca de óleo: R\$ 10,00",
@@ -62,102 +62,131 @@ class MainScreen extends StatelessWidget {
       },
     ];
 
-    // Estrutura Base: Scaffold
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.redAccent[700],
         elevation: 0,
+        // Centraliza o título na AppBar
+        centerTitle: true,
+        // Nome do aplicativo no centro
+        title: const Text(
+          "autocash",
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.5,
+          ),
+        ),
         leading: IconButton(
           icon: const Icon(Icons.exit_to_app, color: Colors.white),
-          onPressed: () {},
+          onPressed: () {
+            print("Botão Sair clicado");
+          },
         ),
         actions: [
-          const Padding(
-            padding: EdgeInsets.only(right: 16.0),
-            child: CircleAvatar(
-              backgroundColor: Colors.transparent,
-              child: Icon(Icons.account_circle, color: Colors.white, size: 35),
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: () {
+                print("Perfil/Avatar clicado! Ir para página de perfil no futuro.");
+              },
+              child: const CircleAvatar(
+                backgroundColor: Colors.transparent,
+                child: Icon(Icons.account_circle, color: Colors.white, size: 35),
+              ),
             ),
           ),
         ],
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16.0),
-        itemCount: carros.length,
-        itemBuilder: (context, index) {
-          final carro = carros[index];
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: 500,
+          ),
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16.0),
+            itemCount: carros.length,
+            itemBuilder: (context, index) {
+              final carro = carros[index];
 
-          return Card(
-            elevation: 4,
-            margin: const EdgeInsets.only(bottom: 24.0),
-            clipBehavior: Clip.antiAlias,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Container(
-                  color: Colors.redAccent[700],
-                  padding: const EdgeInsets.symmetric(vertical: 12.0),
-                  child: Text(
-                    carro["nome"],
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
+              return Card(
+                elevation: 4,
+                margin: const EdgeInsets.only(bottom: 24.0),
+                clipBehavior: Clip.antiAlias,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                
-                Image.network(
-                  carro["imagem"],
-                  height: 220,
-                  fit: BoxFit.cover,
-                ),
-
-                Container(
-                  color: Colors.grey[300],
-                  padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 16.0),
-                  child: Text(
-                    "GASTO MENSAL ATUAL: R\$ ${carro['gasto']}",
-                    style: const TextStyle(
-                      color: Colors.black,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-
-                Container(
-                  color: Colors.grey[400],
-                  padding: const EdgeInsets.all(16.0),
+                child: InkWell(
+                  onTap: () {
+                    print("Card do ${carro['nome']} clicado! Abrindo detalhes...");
+                  },
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: carro["detalhes"].map<Widget>((detalhe) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 8.0),
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Container(
+                        color: Colors.redAccent[700],
+                        padding: const EdgeInsets.symmetric(vertical: 12.0),
                         child: Text(
-                          detalhe,
+                          carro["nome"],
+                          textAlign: TextAlign.center,
                           style: const TextStyle(
-                            color: Colors.black87,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15,
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.2,
                           ),
                         ),
-                      );
-                    }).toList(),
+                      ),
+                      Image.network(
+                        carro["imagem"],
+                        height: 220,
+                        fit: BoxFit.cover,
+                      ),
+                      Container(
+                        color: Colors.grey[300],
+                        padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 16.0),
+                        child: Text(
+                          "GASTO MENSAL ATUAL: R\$ ${carro['gasto']}",
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        color: Colors.grey[400],
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: carro["detalhes"].map<Widget>((detalhe) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 8.0),
+                              child: Text(
+                                detalhe,
+                                style: const TextStyle(
+                                  color: Colors.black87,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
-          );
-        },
+              );
+            },
+          ),
+        ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () {
+          print("Adicionar novo carro clicado");
+        },
         backgroundColor: Colors.grey[300],
         foregroundColor: Colors.black,
         child: const Icon(Icons.add),
