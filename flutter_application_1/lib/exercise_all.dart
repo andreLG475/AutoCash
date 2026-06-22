@@ -28,11 +28,10 @@ class _ExerciseAllPageState extends State<ExerciseAllPage> {
 
   Future<void> _runSequence() async {
     setState(() => _status = 'Iniciando sequência de navegação...');
-    final navigator = Navigator.of(context);
     for (final route in _routes) {
       setState(() => _status = 'Abrindo $route');
       try {
-        await navigator.pushNamed(route);
+        await Navigator.pushNamed(context, route);
         // espera breve enquanto a página fica visível
         await Future.delayed(const Duration(seconds: 2));
       } catch (e) {
