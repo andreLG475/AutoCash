@@ -6,10 +6,10 @@ class LoginPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white, // Fundo branco conforme a imagem
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        automaticallyImplyLeading: false, // Remove completamente o ícone/botão de voltar
-        backgroundColor: Colors.redAccent[700], // Barra vermelha padronizada
+        automaticallyImplyLeading: false,
+        backgroundColor: Colors.redAccent[700],
         elevation: 0,
         centerTitle: true,
         title: const Text(
@@ -17,7 +17,7 @@ class LoginPage extends StatelessWidget {
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
-            letterSpacing: 1.5, // Mantém a identidade visual das outras telas
+            letterSpacing: 1.5,
           ),
         ),
       ),
@@ -26,20 +26,21 @@ class LoginPage extends StatelessWidget {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 400),
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 32.0,
+              ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Ícone do carro mantido na cor primária do app
                   Icon(
-                    Icons.directions_car, 
-                    size: 110, 
+                    Icons.directions_car,
+                    size: 110,
                     color: Colors.redAccent[700],
                   ),
                   const SizedBox(height: 12),
-                  
-                  // Título Login com tipografia mais elegante
+
                   const Text(
                     'LOGIN',
                     textAlign: TextAlign.center,
@@ -52,25 +53,20 @@ class LoginPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 48),
 
-                  // Campo 1: Nome ou Email
                   _buildLabelAndField(
                     label: 'Nome ou Email',
                     obscureText: false,
                   ),
                   const SizedBox(height: 20),
 
-                  // Campo 2: Senha
-                  _buildLabelAndField(
-                    label: 'Senha',
-                    obscureText: true,
-                  ),
+                  _buildLabelAndField(label: 'Senha', obscureText: true),
                   const SizedBox(height: 24),
 
-                  // Botão de Cadastre-se
                   TextButton(
                     onPressed: () => Navigator.pushNamed(context, '/register'),
                     style: TextButton.styleFrom(
-                      foregroundColor: Colors.black87, // Efeito de clique mais suave
+                      foregroundColor:
+                          Colors.black87, // Efeito de clique mais suave
                     ),
                     child: const Text(
                       'Não possui conta? Cadastre-se',
@@ -86,15 +82,23 @@ class LoginPage extends StatelessWidget {
                   // Botão de Login
                   Center(
                     child: ElevatedButton(
-                      onPressed: () => Navigator.pushReplacementNamed(context, '/home'),
+                      onPressed: () =>
+                          Navigator.pushReplacementNamed(context, '/home'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.grey[300], // Fundo cinza do botão
+                        backgroundColor:
+                            Colors.grey[300], // Fundo cinza do botão
                         foregroundColor: Colors.black, // Texto preto
                         elevation: 0,
-                        padding: const EdgeInsets.symmetric(horizontal: 64, vertical: 16),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 64,
+                          vertical: 16,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
-                          side: const BorderSide(color: Colors.black54, width: 1.5), // Borda escura elegante
+                          side: const BorderSide(
+                            color: Colors.black54,
+                            width: 1.5,
+                          ), // Borda escura elegante
                         ),
                       ),
                       child: const Text(
@@ -117,14 +121,17 @@ class LoginPage extends StatelessWidget {
   }
 
   // Widget construtor dos campos com o exato padrão de escrita das outras páginas
-  Widget _buildLabelAndField({required String label, required bool obscureText}) {
+  Widget _buildLabelAndField({
+    required String label,
+    required bool obscureText,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
           style: const TextStyle(
-            fontWeight: FontWeight.bold, 
+            fontWeight: FontWeight.bold,
             fontSize: 15, // Tamanho padronizado com as outras telas
             color: Colors.black,
             letterSpacing: 0.5,
@@ -136,12 +143,19 @@ class LoginPage extends StatelessWidget {
           style: const TextStyle(fontSize: 16),
           decoration: InputDecoration(
             filled: true,
-            fillColor: const Color(0xFFF2F2F2), // Cinza claro interno idêntico ao do cadastro
-            contentPadding: const EdgeInsets.symmetric(vertical: 18.0, horizontal: 16.0),
-            
+            fillColor: const Color(
+              0xFFF2F2F2,
+            ), // Cinza claro interno idêntico ao do cadastro
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 18.0,
+              horizontal: 16.0,
+            ),
+
             // Borda padrão unificada (fina e elegante)
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14), // Arredondamento igual às outras telas
+              borderRadius: BorderRadius.circular(
+                14,
+              ), // Arredondamento igual às outras telas
               borderSide: const BorderSide(color: Colors.black54, width: 1),
             ),
             enabledBorder: OutlineInputBorder(

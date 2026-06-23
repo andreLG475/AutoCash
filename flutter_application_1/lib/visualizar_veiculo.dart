@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 
+import 'models/car.dart';
+
 class VisualizarVeiculoPage extends StatefulWidget {
-  const VisualizarVeiculoPage({super.key});
+  const VisualizarVeiculoPage({super.key, required this.car});
+
+  final Car car;
 
   @override
   State<VisualizarVeiculoPage> createState() => _VisualizarVeiculoPageState();
@@ -20,17 +24,17 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[300], // Cor de fundo idêntica à MainScreen
+      backgroundColor: Colors.grey[300],
       appBar: AppBar(
-        backgroundColor: Colors.redAccent[700], // Mesma cor vermelha da MainScreen
+        backgroundColor: Colors.redAccent[700],
         elevation: 0,
         centerTitle: true,
-        title: const Text(
-          "Gastos",
+        title: Text(
+          widget.car.modelo,
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
-            letterSpacing: 1.5, // Mantém o padrão estético do título de cima
+            letterSpacing: 1.5,
           ),
         ),
         leading: IconButton(
@@ -41,7 +45,11 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
           IconButton(
             icon: const Icon(Icons.exit_to_app, color: Colors.white),
             onPressed: () {
-              Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/login',
+                (route) => false,
+              );
             },
           ),
           Padding(
@@ -53,7 +61,11 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
               },
               child: const CircleAvatar(
                 backgroundColor: Colors.transparent,
-                child: Icon(Icons.account_circle, color: Colors.white, size: 35),
+                child: Icon(
+                  Icons.account_circle,
+                  color: Colors.white,
+                  size: 35,
+                ),
               ),
             ),
           ),
@@ -62,14 +74,11 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
       body: SingleChildScrollView(
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: 500, // Alinhamento responsivo idêntico à MainScreen
-            ),
+            constraints: const BoxConstraints(maxWidth: 500),
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 children: [
-                  // Estrutura Base - Card do Veículo
                   Card(
                     elevation: 4,
                     clipBehavior: Clip.antiAlias,
@@ -79,23 +88,34 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // Cabeçalho do Card
                         Container(
                           color: Colors.redAccent[700],
                           padding: const EdgeInsets.symmetric(vertical: 12.0),
-                          child: const Text(
-                            "PEUGEOT 206",
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.2,
-                            ),
+                          child: Column(
+                            children: [
+                              Text(
+                                widget.car.marca,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                widget.car.modelo,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
 
-                        // Stack + Positioned para imagem e botão flutuante de edição
                         Stack(
                           children: [
                             Container(
@@ -115,10 +135,19 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
                               right: 12,
                               child: CircleAvatar(
                                 radius: 18,
-                                backgroundColor: const Color.fromRGBO(158, 158, 158, 0.9),
+                                backgroundColor: const Color.fromRGBO(
+                                  158,
+                                  158,
+                                  158,
+                                  0.9,
+                                ),
                                 child: IconButton(
                                   padding: EdgeInsets.zero,
-                                  icon: const Icon(Icons.edit, color: Colors.black54, size: 20),
+                                  icon: const Icon(
+                                    Icons.edit,
+                                    color: Colors.black54,
+                                    size: 20,
+                                  ),
                                   onPressed: () {
                                     debugPrint("Editar imagem clicado");
                                   },
@@ -128,27 +157,46 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
                           ],
                         ),
 
-                        // Container de fundo cinza unificado para os gastos
                         Container(
                           color: Colors.grey[400],
                           padding: const EdgeInsets.all(16.0),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              const Text(
-                                "GASTO MENSAL ATUAL: R\$ 500,00",
+                              Text(
+                                "GASTO MENSAL ATUAL: R\$ ${widget.car.gastos.toStringAsFixed(2)}",
                                 textAlign: TextAlign.center,
-                                style: TextStyle(
+                                style: const TextStyle(
                                   color: Colors.black,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 15,
                                 ),
                               ),
                               const SizedBox(height: 6),
-                              const Text(
-                                "GASTO POR KM: R\$ 20,00",
+                              Text(
+                                "GASTO POR KM: R\$ 0.00",
                                 textAlign: TextAlign.center,
-                                style: TextStyle(
+                                style: const TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Ano: ${widget.car.ano}',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Quilometragem: ${widget.car.km}',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
                                   color: Colors.black,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 15,
@@ -156,17 +204,20 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
                               ),
                               const SizedBox(height: 16),
 
-                              // Lista Dinâmica de Gastos Individuais Clicáveis
                               ..._gastos.map((gasto) {
                                 return Padding(
                                   padding: const EdgeInsets.only(bottom: 8.0),
                                   child: Material(
-                                    color: Colors.grey[300], // Cor das cápsulas internas
+                                    color: Colors
+                                        .grey[300], // Cor das cápsulas internas
                                     borderRadius: BorderRadius.circular(8),
                                     child: InkWell(
                                       borderRadius: BorderRadius.circular(8),
                                       onTap: () {
-                                        Navigator.pushNamed(context, '/view-expense');
+                                        Navigator.pushNamed(
+                                          context,
+                                          '/view-expense',
+                                        );
                                       },
                                       child: Padding(
                                         padding: const EdgeInsets.symmetric(
@@ -188,35 +239,19 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
                               }),
 
                               const SizedBox(height: 4),
-
-                              // ExpansionTile customizado para remover bordas indesejadas
-                              Theme(
-                                data: Theme.of(context).copyWith(
-                                  dividerColor: Colors.transparent,
+                              Container(
+                                width: double.infinity,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[300],
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey[300],
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: const ExpansionTile(
-                                    title: Text(
-                                      'Junho 2026',
-                                      style: TextStyle(
-                                        color: Colors.black,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 15,
-                                      ),
-                                    ),
-                                    trailing: Icon(
-                                      Icons.keyboard_arrow_down,
-                                      color: Colors.black,
-                                    ),
-                                    children: [
-                                      ListTile(
-                                        title: Text('Nenhum gasto adicional registrado.'),
-                                      ),
-                                    ],
+                                padding: const EdgeInsets.all(16.0),
+                                child: const Text(
+                                  'Nenhum gasto adicional registrado.',
+                                  style: TextStyle(
+                                    color: Colors.black87,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
                                   ),
                                 ),
                               ),
@@ -229,7 +264,6 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
 
                   const SizedBox(height: 24),
 
-                  // Botão Adicionar Gasto na parte inferior externa do Card
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(

@@ -27,27 +27,26 @@ class _ExerciseAllPageState extends State<ExerciseAllPage> {
   }
 
   Future<void> _runSequence() async {
+    if (!mounted) return;
     setState(() => _status = 'Iniciando sequência de navegação...');
     final navigator = Navigator.of(context);
     for (final route in _routes) {
+      if (!mounted) return;
       setState(() => _status = 'Abrindo $route');
       try {
         await navigator.pushNamed(route);
-        // espera breve enquanto a página fica visível
         await Future.delayed(const Duration(seconds: 2));
       } catch (e) {
-        // se push falhar, apenas log
         debugPrint('Falha ao navegar para $route: $e');
       }
-      // volta para esta página se ainda estiver na pilha
-      if (mounted) {
-        try {
-          Navigator.popUntil(context, ModalRoute.withName('/exercise'));
-        } catch (_) {}
-        await Future.delayed(const Duration(milliseconds: 500));
-      }
+      if (!mounted) return;
+      try {
+        Navigator.popUntil(context, ModalRoute.withName('/exercise'));
+      } catch (_) {}
+      await Future.delayed(const Duration(milliseconds: 500));
     }
 
+    if (!mounted) return;
     setState(() => _status = 'Sequência finalizada');
   }
 
@@ -65,7 +64,8 @@ class _ExerciseAllPageState extends State<ExerciseAllPage> {
               onPressed: () {
                 Navigator.pushNamed(context, '/login');
               },
-              child: const Text('Abrir /login manualmente')),
+              child: const Text('Abrir /login manualmente'),
+            ),
           ],
         ),
       ),

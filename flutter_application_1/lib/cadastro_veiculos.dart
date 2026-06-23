@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+import 'data/database_helper.dart';
+import 'models/car.dart';
 
 class CadastroVeiculosPage extends StatefulWidget {
   const CadastroVeiculosPage({super.key});
@@ -9,17 +13,59 @@ class CadastroVeiculosPage extends StatefulWidget {
 
 class _CadastroVeiculosPageState extends State<CadastroVeiculosPage> {
   final _formKey = GlobalKey<FormState>();
+  final _marcaController = TextEditingController();
+  final _modeloController = TextEditingController();
+  final _anoController = TextEditingController();
+  final _kmController = TextEditingController();
+
+  @override
+  void dispose() {
+    _marcaController.dispose();
+    _modeloController.dispose();
+    _anoController.dispose();
+    _kmController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _saveCar() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final carro = Car(
+      marca: _marcaController.text.trim(),
+      modelo: _modeloController.text.trim(),
+      ano: int.parse(_anoController.text.trim()),
+      km: int.parse(_kmController.text.trim()),
+      image: '',
+      gastos: 0.0,
+    );
+
+    await DatabaseHelper.instance.insertCar(carro);
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Veículo adicionado com sucesso!',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.green,
+        duration: Duration(seconds: 3),
+      ),
+    );
+
+    Navigator.pop(context);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[200], // Fundo padrão do app
+      backgroundColor: Colors.grey[200],
       appBar: AppBar(
-        backgroundColor: Colors.redAccent[700], // Vermelho padrão AutoCash
+        backgroundColor: Colors.redAccent[700],
         elevation: 0,
         centerTitle: true,
         title: const Text(
-          "Cadastro de Veículos",
+          'Cadastro de Veículos',
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -34,7 +80,11 @@ class _CadastroVeiculosPageState extends State<CadastroVeiculosPage> {
           IconButton(
             icon: const Icon(Icons.exit_to_app, color: Colors.white),
             onPressed: () {
-              Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/login',
+                (route) => false,
+              );
             },
           ),
           Padding(
@@ -46,7 +96,11 @@ class _CadastroVeiculosPageState extends State<CadastroVeiculosPage> {
               },
               child: const CircleAvatar(
                 backgroundColor: Colors.transparent,
-                child: Icon(Icons.account_circle, color: Colors.white, size: 35),
+                child: Icon(
+                  Icons.account_circle,
+                  color: Colors.white,
+                  size: 35,
+                ),
               ),
             ),
           ),
@@ -63,8 +117,6 @@ class _CadastroVeiculosPageState extends State<CadastroVeiculosPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    
-                    // --- O CARD COM A BORDA/FUNDO CINZA UNIFICADO ---
                     Card(
                       elevation: 4,
                       clipBehavior: Clip.antiAlias,
@@ -72,47 +124,50 @@ class _CadastroVeiculosPageState extends State<CadastroVeiculosPage> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Container(
-                        color: Colors.grey[400], // Mesma cor cinza de fundo usada na AddExpensePage
+                        color: Colors.grey[400],
                         padding: const EdgeInsets.all(16.0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            // Campo 1: Marca
                             _buildLabelAndField(
-                              label: 'Marca:', 
+                              controller: _marcaController,
+                              label: 'Marca:',
                               hint: 'EX: Peugeot',
                             ),
                             const SizedBox(height: 16),
-
-                            // Campo 2: Modelo
                             _buildLabelAndField(
-                              label: 'Modelo:', 
+                              controller: _modeloController,
+                              label: 'Modelo:',
                               hint: 'EX: 206',
                             ),
                             const SizedBox(height: 16),
-
-                            // Campo 3: Ano
                             _buildLabelAndField(
-                              label: 'Ano:', 
+                              controller: _anoController,
+                              label: 'Ano:',
                               hint: 'EX: 2008',
                               keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                              ],
+                              maxLength: 4,
                             ),
                             const SizedBox(height: 16),
-
-                            // Campo 4: Quilometragem
                             _buildLabelAndField(
-                              label: 'Quilometragem do veículo:', 
-                              hint: 'EX: 140.000',
+                              controller: _kmController,
+                              label: 'Quilometragem do veículo:',
+                              hint: 'EX: 140000',
                               keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                              ],
+                              maxLength: 12,
                             ),
                             const SizedBox(height: 16),
-
-                            // Campo 5: Área de Upload da Foto do Veículo
                             const Text(
                               'Foto do veículo:',
                               style: TextStyle(
                                 color: Colors.black,
-                                fontWeight: FontWeight.bold, 
+                                fontWeight: FontWeight.bold,
                                 fontSize: 15,
                               ),
                             ),
@@ -122,11 +177,13 @@ class _CadastroVeiculosPageState extends State<CadastroVeiculosPage> {
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
                               ),
-                              color: Colors.grey[300], // Caixa interna levemente mais clara
+                              color: Colors.grey[300],
                               child: InkWell(
                                 borderRadius: BorderRadius.circular(14),
                                 onTap: () {
-                                  debugPrint("Acionar câmera ou importar imagem do veículo");
+                                  debugPrint(
+                                    'Acionar câmera ou importar imagem do veículo',
+                                  );
                                 },
                                 child: SizedBox(
                                   height: 180,
@@ -158,24 +215,9 @@ class _CadastroVeiculosPageState extends State<CadastroVeiculosPage> {
                         ),
                       ),
                     ),
-                    
                     const SizedBox(height: 24),
-
-                    // Botão Inferior Externo
                     ElevatedButton(
-                      onPressed: () {
-                        // Feedback visual (SnackBar) ao tentar adicionar o veículo
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Veículo adicionado com sucesso!',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            backgroundColor: Colors.green,
-                            duration: Duration(seconds: 3),
-                          ),
-                        );
-                      },
+                      onPressed: _saveCar,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.grey[300],
                         foregroundColor: Colors.black,
@@ -204,27 +246,49 @@ class _CadastroVeiculosPageState extends State<CadastroVeiculosPage> {
     );
   }
 
-  // Helper idêntico ao da tela de gastos para garantir 100% de consistência
   Widget _buildLabelAndField({
-    required String label, 
-    required String hint, 
+    required TextEditingController controller,
+    required String label,
+    required String hint,
     TextInputType keyboardType = TextInputType.text,
+    List<TextInputFormatter>? inputFormatters,
+    int? maxLength,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          label, 
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black),
+          label,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 15,
+            color: Colors.black,
+          ),
         ),
         const SizedBox(height: 8),
         TextFormField(
+          controller: controller,
           keyboardType: keyboardType,
+          inputFormatters: inputFormatters,
+          maxLength: maxLength,
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return 'Campo obrigatório';
+            }
+            if ((label == 'Ano:' || label == 'Quilometragem do veículo:') &&
+                int.tryParse(value.trim()) == null) {
+              return 'Digite um número válido';
+            }
+            return null;
+          },
           decoration: InputDecoration(
             hintText: hint,
             filled: true,
-            fillColor: const Color(0xFFF2F2F2), // Fundo claro dos inputs
-            contentPadding: const EdgeInsets.symmetric(vertical: 18.0, horizontal: 16.0),
+            fillColor: const Color(0xFFF2F2F2),
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 18.0,
+              horizontal: 16.0,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
               borderSide: BorderSide.none,
@@ -235,7 +299,7 @@ class _CadastroVeiculosPageState extends State<CadastroVeiculosPage> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(color: Colors.redAccent[700]!, width: 2), // Borda de foco vermelha
+              borderSide: BorderSide(color: Colors.redAccent[700]!, width: 2),
             ),
           ),
         ),

@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+
 import 'cadastro_veiculos.dart';
 import 'cadastro_gastos.dart';
 import 'editar_usuario.dart';
@@ -7,9 +10,12 @@ import 'registrar.dart';
 import 'visualizacao_gasto.dart';
 import 'visualizar_veiculo.dart';
 import 'exercise_all.dart';
-import 'package:flutter/foundation.dart';
+import 'data/database_helper.dart';
+import 'models/car.dart';
 
 void main() {
+  sqfliteFfiInit();
+  databaseFactory = databaseFactoryFfi;
   runApp(const MyApp());
 }
 
@@ -25,7 +31,7 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.red,
         scaffoldBackgroundColor: Colors.grey[200],
       ),
-      initialRoute: kDebugMode ? '/exercise' : '/login',
+      initialRoute: '/login',
       routes: {
         '/login': (context) => const LoginPage(),
         '/register': (context) => const RegisterPage(),
@@ -34,61 +40,53 @@ class MyApp extends StatelessWidget {
         '/add-car': (context) => const CadastroVeiculosPage(),
         '/add-expense': (context) => const CadastroGastosPage(),
         '/view-expense': (context) => const VisualizacaoGastoPage(),
-        '/vehicle-expenses': (context) => const VisualizarVeiculoPage(),
+        '/vehicle-expenses': (context) {
+          final args = ModalRoute.of(context)!.settings.arguments;
+          if (args is Car) {
+            return VisualizarVeiculoPage(car: args);
+          }
+          return const Scaffold(
+            body: Center(child: Text('Veículo não encontrado')),
+          );
+        },
         '/edit-user': (context) => const AccountPage(),
       },
     );
   }
 }
 
-class MainScreen extends StatelessWidget {
+class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final List<Map<String, dynamic>> carros = [
-      {
-        "nome": "PEUGEOT 206",
-        "imagem": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTK3DbxnHsDiTNmqivKLzJQ8dfnfYTQXDK-HQ&s",
-        "gasto": "500,00",
-        "detalhes": [
-          "Troca de óleo: R\$ 10,00",
-          "Pneus novos: R\$ 200,00",
-          "Vitrificação do farol: R\$ 100,00",
-          "Outros: R\$ 190,00"
-        ]
-      },
-      {
-        "nome": "PEUGEOT 208",
-        "imagem": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQAp9uSLvv-DBtxdAaIEOq_B1cacHRoFKFK_Q&s",
-        "gasto": "500,00",
-        "detalhes": [
-          "Troca de óleo: R\$ 10,00",
-          "Pneus novos: R\$ 200,00",
-          "Vitrificação do farol: R\$ 100,00",
-          "Outros: R\$ 190,00"
-        ]
-      },
-      {
-        "nome": "PEUGEOT 306",
-        "imagem": "https://via.placeholder.com/800x220?text=PEUGEOT+306",
-        "gasto": "500,00",
-        "detalhes": [
-          "Troca de óleo: R\$ 10,00",
-          "Pneus novos: R\$ 200,00",
-          "Vitrificação do farol: R\$ 100,00",
-          "Outros: R\$ 190,00"
-        ]
-      },
-    ];
+  State<MainScreen> createState() => _MainScreenState();
+}
 
+class _MainScreenState extends State<MainScreen> {
+  List<Car> _carros = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCars();
+  }
+
+  Future<void> _loadCars() async {
+    final carros = await DatabaseHelper.instance.getCars();
+    setState(() {
+      _carros = carros;
+      _loading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.redAccent[700],
         elevation: 0,
-        // Centraliza o título na AppBar
         centerTitle: true,
-        // Nome do aplicativo no centro
         title: const Text(
           "autocash",
           style: TextStyle(
@@ -100,7 +98,11 @@ class MainScreen extends StatelessWidget {
         leading: IconButton(
           icon: const Icon(Icons.exit_to_app, color: Colors.white),
           onPressed: () {
-            Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              '/login',
+              (route) => false,
+            );
           },
         ),
         actions: [
@@ -113,113 +115,166 @@ class MainScreen extends StatelessWidget {
               },
               child: const CircleAvatar(
                 backgroundColor: Colors.transparent,
-                child: Icon(Icons.account_circle, color: Colors.white, size: 35),
+                child: Icon(
+                  Icons.account_circle,
+                  color: Colors.white,
+                  size: 35,
+                ),
               ),
             ),
           ),
         ],
       ),
       body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            maxWidth: 500,
-          ),
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16.0),
-            itemCount: carros.length,
-            itemBuilder: (context, index) {
-              final carro = carros[index];
-
-              return Card(
-                elevation: 4,
-                margin: const EdgeInsets.only(bottom: 24.0),
-                clipBehavior: Clip.antiAlias,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: InkWell(
-                  onTap: () {
-                    debugPrint("Card do ${carro['nome']} clicado! Abrindo detalhes...");
-                    Navigator.pushNamed(context, '/vehicle-expenses');
-                  },
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Container(
-                        color: Colors.redAccent[700],
-                        padding: const EdgeInsets.symmetric(vertical: 12.0),
-                        child: Text(
-                          carro["nome"],
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.2,
-                          ),
+        child: _loading
+            ? const CircularProgressIndicator()
+            : ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 500),
+                child: _carros.isEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text(
+                              'Nenhum veículo cadastrado ainda.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: () async {
+                                await Navigator.pushNamed(context, '/add-car');
+                                await _loadCars();
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.grey[300],
+                                foregroundColor: Colors.black,
+                              ),
+                              child: const Text('Cadastrar primeiro veículo'),
+                            ),
+                          ],
                         ),
-                      ),
-                      Image.network(
-                        carro["imagem"],
-                        height: 220,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            height: 220,
-                            color: Colors.grey[300],
-                            child: const Center(
-                              child: Icon(
-                                Icons.directions_car,
-                                size: 60,
-                                color: Colors.grey,
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(16.0),
+                        itemCount: _carros.length,
+                        itemBuilder: (context, index) {
+                          final carro = _carros[index];
+
+                          return Card(
+                            elevation: 4,
+                            margin: const EdgeInsets.only(bottom: 24.0),
+                            clipBehavior: Clip.antiAlias,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: InkWell(
+                              onTap: () {
+                                Navigator.pushNamed(
+                                  context,
+                                  '/vehicle-expenses',
+                                  arguments: carro,
+                                );
+                              },
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Container(
+                                    color: Colors.redAccent[700],
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12.0,
+                                      horizontal: 16.0,
+                                    ),
+                                    child: Wrap(
+                                      alignment: WrapAlignment.center,
+                                      spacing: 12,
+                                      runSpacing: 8,
+                                      children: [
+                                        ConstrainedBox(
+                                          constraints: const BoxConstraints(
+                                            maxWidth: 220,
+                                          ),
+                                          child: Text(
+                                            carro.marca,
+                                            overflow: TextOverflow.ellipsis,
+                                            maxLines: 1,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                        ConstrainedBox(
+                                          constraints: const BoxConstraints(
+                                            maxWidth: 220,
+                                          ),
+                                          child: Text(
+                                            carro.modelo,
+                                            overflow: TextOverflow.ellipsis,
+                                            maxLines: 1,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.bold,
+                                              letterSpacing: 1.2,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Image.network(
+                                    carro.image.isNotEmpty
+                                        ? carro.image
+                                        : 'https://via.placeholder.com/800x220?text=Sem+imagem',
+                                    height: 220,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        height: 220,
+                                        color: Colors.grey[300],
+                                        child: const Center(
+                                          child: Icon(
+                                            Icons.directions_car,
+                                            size: 60,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  Container(
+                                    color: Colors.grey[300],
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 10.0,
+                                      horizontal: 16.0,
+                                    ),
+                                    child: Text(
+                                      "GASTO MENSAL ATUAL: R\$ ${carro.gastos.toStringAsFixed(2)}",
+                                      style: const TextStyle(
+                                        color: Colors.black,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           );
                         },
                       ),
-                      Container(
-                        color: Colors.grey[300],
-                        padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 16.0),
-                        child: Text(
-                          "GASTO MENSAL ATUAL: R\$ ${carro['gasto']}",
-                          style: const TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                      Container(
-                        color: Colors.grey[400],
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: carro["detalhes"].map<Widget>((detalhe) {
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 8.0),
-                              child: Text(
-                                detalhe,
-                                style: const TextStyle(
-                                  color: Colors.black87,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 15,
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
+              ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.pushNamed(context, '/add-car');
+        onPressed: () async {
+          await Navigator.pushNamed(context, '/add-car');
+          await _loadCars();
         },
         backgroundColor: Colors.grey[300],
         foregroundColor: Colors.black,

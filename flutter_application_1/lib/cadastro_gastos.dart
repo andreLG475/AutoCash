@@ -13,9 +13,9 @@ class _CadastroGastosPageState extends State<CadastroGastosPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[200], // Fundo padrão do app
+      backgroundColor: Colors.grey[200],
       appBar: AppBar(
-        backgroundColor: Colors.redAccent[700], // Vermelho padrão AutoCash
+        backgroundColor: Colors.redAccent[700],
         elevation: 0,
         centerTitle: true,
         title: const Text(
@@ -34,7 +34,11 @@ class _CadastroGastosPageState extends State<CadastroGastosPage> {
           IconButton(
             icon: const Icon(Icons.exit_to_app, color: Colors.white),
             onPressed: () {
-              Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/login',
+                (route) => false,
+              );
             },
           ),
           Padding(
@@ -46,7 +50,11 @@ class _CadastroGastosPageState extends State<CadastroGastosPage> {
               },
               child: const CircleAvatar(
                 backgroundColor: Colors.transparent,
-                child: Icon(Icons.account_circle, color: Colors.white, size: 35),
+                child: Icon(
+                  Icons.account_circle,
+                  color: Colors.white,
+                  size: 35,
+                ),
               ),
             ),
           ),
@@ -63,8 +71,6 @@ class _CadastroGastosPageState extends State<CadastroGastosPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    
-                    // --- AQUI ESTÁ O CARD COM A BORDA/FUNDO CINZA UNIFICADO ---
                     Card(
                       elevation: 4,
                       clipBehavior: Clip.antiAlias,
@@ -72,56 +78,52 @@ class _CadastroGastosPageState extends State<CadastroGastosPage> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Container(
-                        color: Colors.grey[400], // Mesma cor cinza de fundo usada nas outras telas
+                        color: Colors
+                            .grey[400], // Mesma cor cinza de fundo usada nas outras telas
                         padding: const EdgeInsets.all(16.0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            // Campo 1: Manutenção
                             _buildLabelAndField(
-                              label: 'Manutenção:', 
+                              label: 'Manutenção:',
                               hint: 'EX: Troca de óleo',
                             ),
                             const SizedBox(height: 16),
 
-                            // Campo 2: Valor Gasto
                             _buildLabelAndField(
-                              label: 'Valor gasto:', 
+                              label: 'Valor gasto:',
                               hint: 'EX: R\$ 200,00',
                               keyboardType: TextInputType.number,
                             ),
                             const SizedBox(height: 16),
 
-                            // Campo 3: Data
                             _buildLabelAndField(
-                              label: 'Data:', 
+                              label: 'Data:',
                               hint: 'DD/MM/AAAA',
                               keyboardType: TextInputType.datetime,
                             ),
                             const SizedBox(height: 16),
 
-                            // Campo 4: Quilometragem do veículo
                             _buildLabelAndField(
-                              label: 'Quilometragem do veículo:', 
+                              label: 'Quilometragem do veículo:',
                               hint: 'EX: 140.000',
                               keyboardType: TextInputType.number,
                             ),
                             const SizedBox(height: 16),
 
-                            // Campo 5: Descrição (Opcional)
                             _buildLabelAndField(
-                              label: 'Descrição: (opcional)', 
-                              hint: 'Digite detalhes adicionais sobre o serviço...',
+                              label: 'Descrição: (opcional)',
+                              hint:
+                                  'Digite detalhes adicionais sobre o serviço...',
                               maxLines: 5,
                             ),
                             const SizedBox(height: 16),
 
-                            // Campo 6: Área de Upload da Nota Fiscal
                             const Text(
                               'Nota fiscal: (opcional)',
                               style: TextStyle(
                                 color: Color(0xFF000000),
-                                fontWeight: FontWeight.bold, 
+                                fontWeight: FontWeight.bold,
                                 fontSize: 15,
                               ),
                             ),
@@ -131,7 +133,8 @@ class _CadastroGastosPageState extends State<CadastroGastosPage> {
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
                               ),
-                              color: Colors.grey[300], // Caixa interna levemente mais clara
+                              color: Colors
+                                  .grey[300], // Caixa interna levemente mais clara
                               child: InkWell(
                                 borderRadius: BorderRadius.circular(14),
                                 onTap: () {
@@ -167,7 +170,7 @@ class _CadastroGastosPageState extends State<CadastroGastosPage> {
                         ),
                       ),
                     ),
-                    
+
                     const SizedBox(height: 24),
 
                     // Botão Inferior (Fica fora do card cinza, alinhado na base)
@@ -213,8 +216,8 @@ class _CadastroGastosPageState extends State<CadastroGastosPage> {
   }
 
   Widget _buildLabelAndField({
-    required String label, 
-    required String hint, 
+    required String label,
+    required String hint,
     TextInputType keyboardType = TextInputType.text,
     int maxLines = 1,
   }) {
@@ -222,8 +225,12 @@ class _CadastroGastosPageState extends State<CadastroGastosPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          label, 
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black),
+          label,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 15,
+            color: Colors.black,
+          ),
         ),
         const SizedBox(height: 8),
         TextFormField(
@@ -232,8 +239,13 @@ class _CadastroGastosPageState extends State<CadastroGastosPage> {
           decoration: InputDecoration(
             hintText: hint,
             filled: true,
-            fillColor: const Color(0xFFF2F2F2), // Cor clara de dentro dos inputs
-            contentPadding: const EdgeInsets.symmetric(vertical: 18.0, horizontal: 16.0),
+            fillColor: const Color(
+              0xFFF2F2F2,
+            ), // Cor clara de dentro dos inputs
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 18.0,
+              horizontal: 16.0,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
               borderSide: BorderSide.none,
