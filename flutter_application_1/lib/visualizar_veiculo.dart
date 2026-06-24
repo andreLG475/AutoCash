@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'data/database_helper.dart';
 import 'models/car.dart';
+import 'models/gasto.dart';
 
 class VisualizarVeiculoPage extends StatefulWidget {
   const VisualizarVeiculoPage({super.key, required this.car});
@@ -13,14 +14,23 @@ class VisualizarVeiculoPage extends StatefulWidget {
 }
 
 class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
-  final List<Map<String, String>> _gastos = [
-    {'descricao': 'Troca de oleo', 'valor': 'R\$ 50,00'},
-    {'descricao': 'Troca de Motor', 'valor': 'R\$ 150,00'},
-    {'descricao': 'Troca de Pneus', 'valor': 'R\$ 100,00'},
-    {'descricao': 'Calibração de pneus', 'valor': 'R\$ 15,00'},
-    {'descricao': '5L de gasolina', 'valor': 'R\$ 35,00'},
-    {'descricao': 'Cortar as molas', 'valor': 'R\$ 150,00'},
-  ];
+  List<Gasto> _gastos = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadGastos();
+  }
+
+  Future<void> _loadGastos() async {
+    if (widget.car.id == null) return;
+    final gastos = await DatabaseHelper.instance.getGastosByCarId(widget.car.id!);
+    setState(() {
+      _gastos = gastos;
+      _loading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -110,12 +120,14 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
                   ),
                   TextButton(
                     onPressed: () async {
+                      final navigator = Navigator.of(context);
                       if (widget.car.id != null) {
                         await DatabaseHelper.instance.deleteCar(widget.car.id!);
                       }
                       if (!mounted) return;
-                      Navigator.of(context).pop();
-                      Navigator.pop(context);
+                      navigator.pop();
+                      if (!mounted) return;
+                      navigator.pop();
                     },
                     style: TextButton.styleFrom(
                       backgroundColor: Colors.redAccent[700],
@@ -137,14 +149,16 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
         foregroundColor: Colors.black,
         child: const Icon(Icons.delete),
       ),
-      body: SingleChildScrollView(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 500),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: [
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 500),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      children: [
                   Card(
                     elevation: 4,
                     clipBehavior: Clip.antiAlias,
@@ -283,6 +297,7 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
                                         Navigator.pushNamed(
                                           context,
                                           '/view-expense',
+                                          arguments: gasto,
                                         );
                                       },
                                       child: Padding(
@@ -291,7 +306,7 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
                                           horizontal: 16.0,
                                         ),
                                         child: Text(
-                                          "${gasto['descricao']}: ${gasto['valor']}",
+                                          "${gasto.descricao}: R\$ ${gasto.valor.toStringAsFixed(2)}",
                                           style: const TextStyle(
                                             color: Colors.black87,
                                             fontWeight: FontWeight.bold,
@@ -305,22 +320,23 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
                               }),
 
                               const SizedBox(height: 4),
-                              Container(
-                                width: double.infinity,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[300],
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                padding: const EdgeInsets.all(16.0),
-                                child: const Text(
-                                  'Nenhum gasto adicional registrado.',
-                                  style: TextStyle(
-                                    color: Colors.black87,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 15,
+                              if (_gastos.isEmpty)
+                                Container(
+                                  width: double.infinity,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[300],
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: const Text(
+                                    'Nenhum gasto adicional registrado.',
+                                    style: TextStyle(
+                                      color: Colors.black87,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                    ),
                                   ),
                                 ),
-                              ),
                             ],
                           ),
                         ),
@@ -333,8 +349,9 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pushNamed(context, '/add-expense');
+                      onPressed: () async {
+                        await Navigator.pushNamed(context, '/add-expense', arguments: widget.car);
+                        _loadGastos();
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.grey[300],

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'data/database_helper.dart';
+
 class ExerciseAllPage extends StatefulWidget {
   const ExerciseAllPage({super.key});
 
@@ -8,16 +10,6 @@ class ExerciseAllPage extends StatefulWidget {
 }
 
 class _ExerciseAllPageState extends State<ExerciseAllPage> {
-  final List<String> _routes = [
-    '/login',
-    '/register',
-    '/home',
-    '/add-car',
-    '/add-expense',
-    '/view-expense',
-    '/vehicle-expenses',
-  ];
-
   String _status = 'Pronto para executar rota(s)';
 
   @override
@@ -30,14 +22,77 @@ class _ExerciseAllPageState extends State<ExerciseAllPage> {
     if (!mounted) return;
     setState(() => _status = 'Iniciando sequência de navegação...');
     final navigator = Navigator.of(context);
-    for (final route in _routes) {
+
+    // Testar login
+    if (!mounted) return;
+    setState(() => _status = 'Abrindo /login');
+    try {
+      await navigator.pushNamed('/login');
+      await Future.delayed(const Duration(seconds: 1));
+    } catch (e) {
+      debugPrint('Falha ao navegar para /login: $e');
+    }
+    if (!mounted) return;
+    try {
+      Navigator.popUntil(context, ModalRoute.withName('/exercise'));
+    } catch (_) {}
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    // Testar registro
+    if (!mounted) return;
+    setState(() => _status = 'Abrindo /register');
+    try {
+      await navigator.pushNamed('/register');
+      await Future.delayed(const Duration(seconds: 1));
+    } catch (e) {
+      debugPrint('Falha ao navegar para /register: $e');
+    }
+    if (!mounted) return;
+    try {
+      Navigator.popUntil(context, ModalRoute.withName('/exercise'));
+    } catch (_) {}
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    // Testar home
+    if (!mounted) return;
+    setState(() => _status = 'Abrindo /home');
+    try {
+      await navigator.pushNamed('/home');
+      await Future.delayed(const Duration(seconds: 1));
+    } catch (e) {
+      debugPrint('Falha ao navegar para /home: $e');
+    }
+    if (!mounted) return;
+    try {
+      Navigator.popUntil(context, ModalRoute.withName('/exercise'));
+    } catch (_) {}
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    // Testar cadastro de veículo
+    if (!mounted) return;
+    setState(() => _status = 'Abrindo /add-car');
+    try {
+      await navigator.pushNamed('/add-car');
+      await Future.delayed(const Duration(seconds: 1));
+    } catch (e) {
+      debugPrint('Falha ao navegar para /add-car: $e');
+    }
+    if (!mounted) return;
+    try {
+      Navigator.popUntil(context, ModalRoute.withName('/exercise'));
+    } catch (_) {}
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    // Testar visualização de veículo (precisa de um Car)
+    final cars = await DatabaseHelper.instance.getCars();
+    if (cars.isNotEmpty) {
       if (!mounted) return;
-      setState(() => _status = 'Abrindo $route');
+      setState(() => _status = 'Abrindo /vehicle-expenses');
       try {
-        await navigator.pushNamed(route);
-        await Future.delayed(const Duration(seconds: 2));
+        await navigator.pushNamed('/vehicle-expenses', arguments: cars.first);
+        await Future.delayed(const Duration(seconds: 1));
       } catch (e) {
-        debugPrint('Falha ao navegar para $route: $e');
+        debugPrint('Falha ao navegar para /vehicle-expenses: $e');
       }
       if (!mounted) return;
       try {

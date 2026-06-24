@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+import 'data/database_helper.dart';
+import 'models/gasto.dart';
+import 'models/car.dart';
 
 class CadastroGastosPage extends StatefulWidget {
-  const CadastroGastosPage({super.key});
+  final Car? car;
+
+  const CadastroGastosPage({super.key, this.car});
 
   @override
   State<CadastroGastosPage> createState() => _CadastroGastosPageState();
@@ -9,6 +16,94 @@ class CadastroGastosPage extends StatefulWidget {
 
 class _CadastroGastosPageState extends State<CadastroGastosPage> {
   final _formKey = GlobalKey<FormState>();
+  final _descricaoController = TextEditingController();
+  final _valorController = TextEditingController();
+  final _dataController = TextEditingController();
+  final _quilometragemController = TextEditingController();
+  final _descricaoDetalhadaController = TextEditingController();
+
+  Car? _car;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCar();
+  }
+
+  Future<void> _loadCar() async {
+    if (widget.car != null) {
+      setState(() {
+        _car = widget.car;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _descricaoController.dispose();
+    _valorController.dispose();
+    _dataController.dispose();
+    _quilometragemController.dispose();
+    _descricaoDetalhadaController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _saveGasto() async {
+    if (_car == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Erro: Veículo não encontrado'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (!_formKey.currentState!.validate()) return;
+
+    final valor = double.tryParse(_valorController.text.trim().replaceAll(',', '.'));
+    if (valor == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Digite um valor válido'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final gasto = Gasto(
+      carId: _car!.id!,
+      descricao: _descricaoController.text.trim(),
+      valor: valor,
+      data: _dataController.text.trim(),
+      quilometragem: int.parse(_quilometragemController.text.trim()),
+      descricaoDetalhada: _descricaoDetalhadaController.text.trim().isEmpty
+          ? null
+          : _descricaoDetalhadaController.text.trim(),
+    );
+
+    await DatabaseHelper.instance.insertGasto(gasto);
+
+    final totalGastos = await DatabaseHelper.instance.getTotalGastosByCarId(_car!.id!);
+    final updatedCar = _car!.copy(gastos: totalGastos);
+    await DatabaseHelper.instance.updateCar(updatedCar);
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Gasto de manutenção adicionado com sucesso!',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.green,
+        duration: Duration(seconds: 3),
+      ),
+    );
+
+    Navigator.pop(context);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -85,12 +180,14 @@ class _CadastroGastosPageState extends State<CadastroGastosPage> {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             _buildLabelAndField(
+                              controller: _descricaoController,
                               label: 'Manutenção:',
                               hint: 'EX: Troca de óleo',
                             ),
                             const SizedBox(height: 16),
 
                             _buildLabelAndField(
+                              controller: _valorController,
                               label: 'Valor gasto:',
                               hint: 'EX: R\$ 200,00',
                               keyboardType: TextInputType.number,
@@ -98,6 +195,7 @@ class _CadastroGastosPageState extends State<CadastroGastosPage> {
                             const SizedBox(height: 16),
 
                             _buildLabelAndField(
+                              controller: _dataController,
                               label: 'Data:',
                               hint: 'DD/MM/AAAA',
                               keyboardType: TextInputType.datetime,
@@ -105,13 +203,16 @@ class _CadastroGastosPageState extends State<CadastroGastosPage> {
                             const SizedBox(height: 16),
 
                             _buildLabelAndField(
+                              controller: _quilometragemController,
                               label: 'Quilometragem do veículo:',
                               hint: 'EX: 140.000',
                               keyboardType: TextInputType.number,
+                              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                             ),
                             const SizedBox(height: 16),
 
                             _buildLabelAndField(
+                              controller: _descricaoDetalhadaController,
                               label: 'Descrição: (opcional)',
                               hint:
                                   'Digite detalhes adicionais sobre o serviço...',
@@ -175,18 +276,7 @@ class _CadastroGastosPageState extends State<CadastroGastosPage> {
 
                     // Botão Inferior (Fica fora do card cinza, alinhado na base)
                     ElevatedButton(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Gasto de manutenção adicionado com sucesso!',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            backgroundColor: Colors.green,
-                            duration: Duration(seconds: 3),
-                          ),
-                        );
-                      },
+                      onPressed: _saveGasto,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.grey[300],
                         foregroundColor: Colors.black,
@@ -216,10 +306,12 @@ class _CadastroGastosPageState extends State<CadastroGastosPage> {
   }
 
   Widget _buildLabelAndField({
+    TextEditingController? controller,
     required String label,
     required String hint,
     TextInputType keyboardType = TextInputType.text,
     int maxLines = 1,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -234,8 +326,10 @@ class _CadastroGastosPageState extends State<CadastroGastosPage> {
         ),
         const SizedBox(height: 8),
         TextFormField(
+          controller: controller,
           keyboardType: keyboardType,
           maxLines: maxLines,
+          inputFormatters: inputFormatters,
           decoration: InputDecoration(
             hintText: hint,
             filled: true,

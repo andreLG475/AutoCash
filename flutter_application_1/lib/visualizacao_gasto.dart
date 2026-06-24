@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'models/gasto.dart';
+
 class VisualizacaoGastoPage extends StatefulWidget {
   const VisualizacaoGastoPage({super.key});
 
@@ -8,6 +10,23 @@ class VisualizacaoGastoPage extends StatefulWidget {
 }
 
 class _VisualizacaoGastoPageState extends State<VisualizacaoGastoPage> {
+  Gasto? _gasto;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _loadGasto();
+  }
+
+  void _loadGasto() {
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is Gasto) {
+      setState(() {
+        _gasto = args;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -75,33 +94,32 @@ class _VisualizacaoGastoPageState extends State<VisualizacaoGastoPage> {
                   children: [
                     _buildDisplayField(
                       label: 'Manutenção:',
-                      value: 'Troca de oleo',
+                      value: _gasto?.descricao ?? '',
                     ),
                     const SizedBox(height: 16),
 
                     // 2. Valor Gasto
                     _buildDisplayField(
                       label: 'Valor gasto:',
-                      value: r'R$ 200,00',
+                      value: _gasto != null ? r'R$ ' + _gasto!.valor.toStringAsFixed(2) : '',
                     ),
                     const SizedBox(height: 16),
 
                     // 3. Data da Manutenção
-                    _buildDisplayField(label: 'Data:', value: '26/05/2026'),
+                    _buildDisplayField(label: 'Data:', value: _gasto?.data ?? ''),
                     const SizedBox(height: 16),
 
                     // 4. Quilometragem do Veículo
                     _buildDisplayField(
                       label: 'Kilomentragem do veiculo:',
-                      value: '67676767',
+                      value: _gasto?.quilometragem.toString() ?? '',
                     ),
                     const SizedBox(height: 16),
 
                     // 5. Descrição Detalhada
                     _buildDisplayField(
                       label: 'Descrição:',
-                      value:
-                          'Feita a troca do oleo, foi posto 4Litros de 20W50',
+                      value: _gasto?.descricaoDetalhada ?? '',
                     ),
                     const SizedBox(height: 16),
 

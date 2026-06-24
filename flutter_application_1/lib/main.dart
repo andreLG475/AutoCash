@@ -34,7 +34,15 @@ class MyApp extends StatelessWidget {
         '/home': (context) => const MainScreen(),
         '/exercise': (context) => const ExerciseAllPage(),
         '/add-car': (context) => const CadastroVeiculosPage(),
-        '/add-expense': (context) => const CadastroGastosPage(),
+        '/add-expense': (context) {
+          final args = ModalRoute.of(context)!.settings.arguments;
+          if (args is Car) {
+            return CadastroGastosPage(car: args);
+          }
+          return const Scaffold(
+            body: Center(child: Text('Veículo não encontrado')),
+          );
+        },
         '/view-expense': (context) => const VisualizacaoGastoPage(),
         '/vehicle-expenses': (context) {
           final args = ModalRoute.of(context)!.settings.arguments;

@@ -1,7 +1,45 @@
 import 'package:flutter/material.dart';
 
-class AccountPage extends StatelessWidget {
+class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
+
+  @override
+  State<AccountPage> createState() => _AccountPageState();
+}
+
+class _AccountPageState extends State<AccountPage> {
+  final _emailController = TextEditingController();
+  final _senhaController = TextEditingController();
+  final _nomeController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _emailController.text = 'Meuturbo12309@gmail.com';
+    _senhaController.text = '1234567';
+    _nomeController.text = 'Usuário 1';
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _senhaController.dispose();
+    _nomeController.dispose();
+    super.dispose();
+  }
+
+  void _saveChanges() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Alterações salvas com sucesso!',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.green,
+        duration: Duration(seconds: 3),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,7 +112,7 @@ class AccountPage extends StatelessWidget {
                               ),
                               onPressed: () {
                                 // Ação para trocar a foto
-                                print("Trocar foto clicado");
+                                debugPrint("Trocar foto clicado");
                               },
                             ),
                           ),
@@ -100,8 +138,8 @@ class AccountPage extends StatelessWidget {
 
                   // Campo 1: Email (Agora editável)
                   _buildLabelAndField(
+                    controller: _emailController,
                     label: 'Email:',
-                    initialValue: 'Meuturbo12309@gmail.com',
                     obscureText: false,
                     readOnly: false,
                   ),
@@ -109,9 +147,8 @@ class AccountPage extends StatelessWidget {
 
                   // Campo 2: Senha (Agora editável)
                   _buildLabelAndField(
+                    controller: _senhaController,
                     label: 'Senha:',
-                    initialValue:
-                        '1234567', // O obscureText vai transformar em XXXXXXX / bolinhas
                     obscureText: true,
                     readOnly: false,
                   ),
@@ -119,10 +156,41 @@ class AccountPage extends StatelessWidget {
 
                   // Campo 3: Nome de usuário (Editável)
                   _buildLabelAndField(
+                    controller: _nomeController,
                     label: 'Nome de usuario:',
-                    initialValue: 'Usuário 1',
                     obscureText: false,
                     readOnly: false,
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Botão Salvar
+                  Center(
+                    child: ElevatedButton(
+                      onPressed: _saveChanges,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey[300],
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 64,
+                          vertical: 16,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: const BorderSide(
+                            color: Colors.black54,
+                            width: 1.5,
+                          ),
+                        ),
+                      ),
+                      child: const Text(
+                        'SALVAR',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -135,8 +203,8 @@ class AccountPage extends StatelessWidget {
 
   // Helper padronizado para renderizar as caixas de texto iguais às de Login e Cadastro
   Widget _buildLabelAndField({
+    TextEditingController? controller,
     required String label,
-    required String initialValue,
     required bool obscureText,
     required bool readOnly,
   }) {
@@ -154,7 +222,7 @@ class AccountPage extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         TextFormField(
-          initialValue: initialValue,
+          controller: controller,
           obscureText: obscureText,
           readOnly: readOnly,
           style: TextStyle(
