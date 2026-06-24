@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'cadastro_veiculos.dart';
 import 'cadastro_gastos.dart';
@@ -14,8 +12,6 @@ import 'data/database_helper.dart';
 import 'models/car.dart';
 
 void main() {
-  sqfliteFfiInit();
-  databaseFactory = databaseFactoryFfi;
   runApp(const MyApp());
 }
 
@@ -31,7 +27,7 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.red,
         scaffoldBackgroundColor: Colors.grey[200],
       ),
-      initialRoute: '/login',
+      home: const LoginPage(),
       routes: {
         '/login': (context) => const LoginPage(),
         '/register': (context) => const RegisterPage(),
@@ -173,12 +169,13 @@ class _MainScreenState extends State<MainScreen> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: InkWell(
-                              onTap: () {
-                                Navigator.pushNamed(
+                              onTap: () async {
+                                await Navigator.pushNamed(
                                   context,
                                   '/vehicle-expenses',
                                   arguments: carro,
                                 );
+                                _loadCars();
                               },
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,

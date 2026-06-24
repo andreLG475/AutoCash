@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'data/database_helper.dart';
 import 'models/car.dart';
 
 class VisualizarVeiculoPage extends StatefulWidget {
@@ -70,6 +71,71 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
             ),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                title: const Text(
+                  'Excluir veículo',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                content: Text(
+                  'Tem certeza que deseja apagar o veículo ${widget.car.marca} ${widget.car.modelo}?',
+                  style: const TextStyle(
+                    color: Colors.black87,
+                    fontSize: 15,
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: const Text(
+                      'Cancelar',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () async {
+                      if (widget.car.id != null) {
+                        await DatabaseHelper.instance.deleteCar(widget.car.id!);
+                      }
+                      if (!mounted) return;
+                      Navigator.of(context).pop();
+                      Navigator.pop(context);
+                    },
+                    style: TextButton.styleFrom(
+                      backgroundColor: Colors.redAccent[700],
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text(
+                      'Excluir',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+        backgroundColor: Colors.grey[300],
+        foregroundColor: Colors.black,
+        child: const Icon(Icons.delete),
       ),
       body: SingleChildScrollView(
         child: Center(
