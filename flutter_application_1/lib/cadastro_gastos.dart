@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'data/database_helper.dart';
 import 'models/gasto.dart';
 import 'models/car.dart';
+import 'services/expense_logic.dart';
 
 class CadastroGastosPage extends StatefulWidget {
   final Car? car;
@@ -23,6 +24,7 @@ class _CadastroGastosPageState extends State<CadastroGastosPage> {
   final _descricaoDetalhadaController = TextEditingController();
 
   Car? _car;
+  DateTime? _selectedDate;
 
   @override
   void initState() {
@@ -49,7 +51,7 @@ class _CadastroGastosPageState extends State<CadastroGastosPage> {
   }
 
   Future<void> _saveGasto() async {
-    if (_car == null) {
+    if (_car == null || _car!.id == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Erro: Veículo não encontrado'),
@@ -61,8 +63,10 @@ class _CadastroGastosPageState extends State<CadastroGastosPage> {
 
     if (!_formKey.currentState!.validate()) return;
 
-    final valor = double.tryParse(_valorController.text.trim().replaceAll(',', '.'));
-    if (valor == null) {
+    final valor = double.tryParse(
+      _valorController.text.trim().replaceAll(',', '.'),
+    );
+    if (valor == null || valor <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Digite um valor válido'),
@@ -72,22 +76,63 @@ class _CadastroGastosPageState extends State<CadastroGastosPage> {
       return;
     }
 
+    if (_selectedDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Selecione uma data válida'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final currentCar = await DatabaseHelper.instance.getCarById(_car!.id!);
+    if (!mounted) return;
+    if (currentCar == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Erro: Veículo não encontrado'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final quilometragem = int.parse(_quilometragemController.text.trim());
+    final existingGastos = await DatabaseHelper.instance.getGastosByCarId(
+      _car!.id!,
+    );
+    final chronologyError = validateMileageAgainstChronology(
+      selectedDate: _selectedDate!,
+      mileage: quilometragem,
+      existingGastos: existingGastos,
+      initialMileage: currentCar.kmInicial,
+    );
+
+    if (chronologyError != null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(chronologyError), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
     final gasto = Gasto(
       carId: _car!.id!,
       descricao: _descricaoController.text.trim(),
       valor: valor,
-      data: _dataController.text.trim(),
-      quilometragem: int.parse(_quilometragemController.text.trim()),
+      data: _formatDateForStorage(_selectedDate!),
+      quilometragem: quilometragem,
       descricaoDetalhada: _descricaoDetalhadaController.text.trim().isEmpty
           ? null
           : _descricaoDetalhadaController.text.trim(),
     );
 
     await DatabaseHelper.instance.insertGasto(gasto);
-
-    final totalGastos = await DatabaseHelper.instance.getTotalGastosByCarId(_car!.id!);
-    final updatedCar = _car!.copy(gastos: totalGastos);
-    await DatabaseHelper.instance.updateCar(updatedCar);
+    await DatabaseHelper.instance.syncCarMetrics(
+      _car!.id!,
+      referenceDate: _selectedDate!,
+    );
 
     if (!mounted) return;
 
@@ -105,6 +150,31 @@ class _CadastroGastosPageState extends State<CadastroGastosPage> {
     Navigator.pop(context);
   }
 
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? now,
+      firstDate: DateTime(1900),
+      lastDate: now,
+    );
+
+    if (pickedDate != null) {
+      setState(() {
+        _selectedDate = pickedDate;
+        _dataController.text = _formatDate(pickedDate);
+      });
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+  }
+
+  String _formatDateForStorage(DateTime date) {
+    return '${date.year.toString()}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -113,13 +183,25 @@ class _CadastroGastosPageState extends State<CadastroGastosPage> {
         backgroundColor: Colors.redAccent[700],
         elevation: 0,
         centerTitle: true,
-        title: const Text(
-          "Cadastro de manutenção",
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.5,
-          ),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Hero(
+              tag: 'app_brand_icon',
+              child: Icon(Icons.directions_car, color: Colors.white, size: 20),
+            ),
+            SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                'Cadastro de manutenção',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5,
+                ),
+              ),
+            ),
+          ],
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
@@ -189,8 +271,54 @@ class _CadastroGastosPageState extends State<CadastroGastosPage> {
                             _buildLabelAndField(
                               controller: _valorController,
                               label: 'Valor gasto:',
-                              hint: 'EX: R\$ 200,00',
+                              hint: 'EX: 200,00',
                               keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.allow(
+                                  RegExp(r'[0-9,]'),
+                                ),
+                              ],
+                              onChanged: (value) {
+                                final cleaned = value.replaceAll(
+                                  RegExp(r'[^0-9]'),
+                                  '',
+                                );
+                                if (cleaned.isEmpty) {
+                                  if (_valorController.text != '') {
+                                    _valorController.value =
+                                        const TextEditingValue(
+                                          text: '',
+                                          selection: TextSelection.collapsed(
+                                            offset: 0,
+                                          ),
+                                        );
+                                  }
+                                  return;
+                                }
+
+                                final digits = cleaned.padLeft(3, '0');
+                                final centavos = digits.substring(
+                                  digits.length - 2,
+                                );
+                                final reais = digits.length <= 2
+                                    ? '0'
+                                    : digits
+                                          .substring(0, digits.length - 2)
+                                          .replaceFirst(
+                                            RegExp(r'^0+(?!$)'),
+                                            '',
+                                          );
+                                final formatted = '$reais,$centavos';
+
+                                if (_valorController.text != formatted) {
+                                  _valorController.value = TextEditingValue(
+                                    text: formatted,
+                                    selection: TextSelection.collapsed(
+                                      offset: formatted.length,
+                                    ),
+                                  );
+                                }
+                              },
                             ),
                             const SizedBox(height: 16),
 
@@ -198,7 +326,15 @@ class _CadastroGastosPageState extends State<CadastroGastosPage> {
                               controller: _dataController,
                               label: 'Data:',
                               hint: 'DD/MM/AAAA',
-                              keyboardType: TextInputType.datetime,
+                              keyboardType: TextInputType.none,
+                              readOnly: true,
+                              onTap: _pickDate,
+                              validator: (value) {
+                                if (_selectedDate == null) {
+                                  return 'Selecione uma data';
+                                }
+                                return null;
+                              },
                             ),
                             const SizedBox(height: 16),
 
@@ -207,7 +343,9 @@ class _CadastroGastosPageState extends State<CadastroGastosPage> {
                               label: 'Quilometragem do veículo:',
                               hint: 'EX: 140.000',
                               keyboardType: TextInputType.number,
-                              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                              ],
                             ),
                             const SizedBox(height: 16),
 
@@ -312,6 +450,10 @@ class _CadastroGastosPageState extends State<CadastroGastosPage> {
     TextInputType keyboardType = TextInputType.text,
     int maxLines = 1,
     List<TextInputFormatter>? inputFormatters,
+    bool readOnly = false,
+    VoidCallback? onTap,
+    String? Function(String?)? validator,
+    ValueChanged<String>? onChanged,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -330,6 +472,10 @@ class _CadastroGastosPageState extends State<CadastroGastosPage> {
           keyboardType: keyboardType,
           maxLines: maxLines,
           inputFormatters: inputFormatters,
+          readOnly: readOnly,
+          onTap: onTap,
+          validator: validator,
+          onChanged: onChanged,
           decoration: InputDecoration(
             hintText: hint,
             filled: true,

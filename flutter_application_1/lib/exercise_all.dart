@@ -108,7 +108,19 @@ class _ExerciseAllPageState extends State<ExerciseAllPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Exercise All Pages (debug)')),
+      appBar: AppBar(
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Hero(
+              tag: 'app_brand_icon',
+              child: Icon(Icons.directions_car, color: Colors.white, size: 20),
+            ),
+            SizedBox(width: 8),
+            Flexible(child: Text('Exercise All Pages (debug)')),
+          ],
+        ),
+      ),
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,

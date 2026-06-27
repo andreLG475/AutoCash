@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'data/database_helper.dart';
 import 'models/car.dart';
 import 'models/gasto.dart';
+import 'services/expense_logic.dart';
 
 class VisualizarVeiculoPage extends StatefulWidget {
   const VisualizarVeiculoPage({super.key, required this.car});
@@ -14,7 +15,11 @@ class VisualizarVeiculoPage extends StatefulWidget {
 }
 
 class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
-  List<Gasto> _gastos = [];
+  final Map<String, List<Gasto>> _gastosPorMes = {};
+  Car? _currentCar;
+  String? _mesSelecionado;
+  double _monthlyTotal = 0.0;
+  double _costPerKm = 0.0;
   bool _loading = true;
 
   @override
@@ -25,11 +30,133 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
 
   Future<void> _loadGastos() async {
     if (widget.car.id == null) return;
-    final gastos = await DatabaseHelper.instance.getGastosByCarId(widget.car.id!);
+
+    final refreshedCar = await DatabaseHelper.instance.syncCarMetrics(
+      widget.car.id!,
+      referenceDate: DateTime.now(),
+    );
+    final gastos = await DatabaseHelper.instance.getGastosByCarId(
+      widget.car.id!,
+    );
+    final gastosPorMes = <String, List<Gasto>>{};
+    for (final gasto in gastos) {
+      final date = DateTime.tryParse(gasto.data);
+      final key = date == null
+          ? 'sem-data'
+          : '${date.year.toString()}-${date.month.toString().padLeft(2, '0')}';
+      gastosPorMes.putIfAbsent(key, () => []).add(gasto);
+    }
+
+    final sortedKeys = gastosPorMes.keys.toList()
+      ..sort((a, b) => b.compareTo(a));
+    final mesSelecionado =
+        _mesSelecionado != null && gastosPorMes.containsKey(_mesSelecionado)
+        ? _mesSelecionado
+        : (sortedKeys.isNotEmpty ? sortedKeys.first : null);
+    final gastosDoMesSelecionado = mesSelecionado == null
+        ? <Gasto>[]
+        : gastosPorMes[mesSelecionado] ?? <Gasto>[];
+    final totalMonthly = gastosDoMesSelecionado.fold<double>(
+      0.0,
+      (sum, gasto) => sum + gasto.valor,
+    );
+    final totalSpent = gastos.fold<double>(
+      0.0,
+      (sum, gasto) => sum + gasto.valor,
+    );
+    final costPerKm = calculateCostPerKm(
+      totalSpent: totalSpent,
+      initialKm: refreshedCar.kmInicial,
+      currentKm: refreshedCar.km,
+    );
+
     setState(() {
-      _gastos = gastos;
+      _currentCar = refreshedCar;
+      _gastosPorMes
+        ..clear()
+        ..addAll(gastosPorMes);
+      _mesSelecionado = mesSelecionado;
+      _monthlyTotal = totalMonthly;
+      _costPerKm = costPerKm;
       _loading = false;
     });
+  }
+
+  String _formatarMes(String key) {
+    if (key == 'sem-data') {
+      return 'Sem data';
+    }
+
+    final parts = key.split('-');
+    if (parts.length != 2) {
+      return key;
+    }
+
+    final year = int.tryParse(parts[0]) ?? 0;
+    final month = int.tryParse(parts[1]) ?? 1;
+    final date = DateTime(year, month);
+    return '${_nomeMes(date.month)} ${date.year}';
+  }
+
+  String _nomeMes(int mes) {
+    const nomes = [
+      'Janeiro',
+      'Fevereiro',
+      'Março',
+      'Abril',
+      'Maio',
+      'Junho',
+      'Julho',
+      'Agosto',
+      'Setembro',
+      'Outubro',
+      'Novembro',
+      'Dezembro',
+    ];
+    return nomes[mes - 1];
+  }
+
+  Future<void> _confirmDeleteGasto(Gasto gasto) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmação'),
+        content: Text('Deseja realmente excluir o gasto "${gasto.descricao}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Excluir', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+    if (gasto.id == null) return;
+
+    await DatabaseHelper.instance.deleteGasto(gasto.id!);
+
+    final carId = _currentCar?.id ?? widget.car.id;
+    if (carId != null) {
+      await DatabaseHelper.instance.syncCarMetrics(
+        carId,
+        referenceDate: DateTime.now(),
+      );
+    }
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Gasto excluído com sucesso'),
+        backgroundColor: Colors.green,
+      ),
+    );
+
+    await _loadGastos();
   }
 
   @override
@@ -40,13 +167,25 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
         backgroundColor: Colors.redAccent[700],
         elevation: 0,
         centerTitle: true,
-        title: Text(
-          widget.car.modelo,
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.5,
-          ),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Hero(
+              tag: 'app_brand_icon',
+              child: Icon(Icons.directions_car, color: Colors.white, size: 20),
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                (_currentCar ?? widget.car).modelo,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5,
+                ),
+              ),
+            ),
+          ],
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
@@ -100,10 +239,7 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
                 ),
                 content: Text(
                   'Tem certeza que deseja apagar o veículo ${widget.car.marca} ${widget.car.modelo}?',
-                  style: const TextStyle(
-                    color: Colors.black87,
-                    fontSize: 15,
-                  ),
+                  style: const TextStyle(color: Colors.black87, fontSize: 15),
                 ),
                 actions: [
                   TextButton(
@@ -135,9 +271,7 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
                     ),
                     child: const Text(
                       'Excluir',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],
@@ -159,225 +293,350 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
                     padding: const EdgeInsets.all(16.0),
                     child: Column(
                       children: [
-                  Card(
-                    elevation: 4,
-                    clipBehavior: Clip.antiAlias,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Container(
-                          color: Colors.redAccent[700],
-                          padding: const EdgeInsets.symmetric(vertical: 12.0),
-                          child: Column(
-                            children: [
-                              Text(
-                                widget.car.marca,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text(
-                                widget.car.modelo,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1.2,
-                                ),
-                              ),
-                            ],
+                        Card(
+                          elevation: 4,
+                          clipBehavior: Clip.antiAlias,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                        ),
-
-                        Stack(
-                          children: [
-                            Container(
-                              height: 220,
-                              width: double.infinity,
-                              color: Colors.grey[300],
-                              child: const Center(
-                                child: Icon(
-                                  Icons.directions_car,
-                                  size: 80,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              bottom: 12,
-                              right: 12,
-                              child: CircleAvatar(
-                                radius: 18,
-                                backgroundColor: const Color.fromRGBO(
-                                  158,
-                                  158,
-                                  158,
-                                  0.9,
-                                ),
-                                child: IconButton(
-                                  padding: EdgeInsets.zero,
-                                  icon: const Icon(
-                                    Icons.edit,
-                                    color: Colors.black54,
-                                    size: 20,
-                                  ),
-                                  onPressed: () {
-                                    debugPrint("Editar imagem clicado");
-                                  },
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        Container(
-                          color: Colors.grey[400],
-                          padding: const EdgeInsets.all(16.0),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              Text(
-                                "GASTO MENSAL ATUAL: R\$ ${widget.car.gastos.toStringAsFixed(2)}",
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15,
+                              Container(
+                                color: Colors.redAccent[700],
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12.0,
+                                ),
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      (_currentCar ?? widget.car).marca,
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    Text(
+                                      (_currentCar ?? widget.car).modelo,
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 1.2,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              const SizedBox(height: 6),
-                              Text(
-                                "GASTO POR KM: R\$ 0.00",
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Ano: ${widget.car.ano}',
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Quilometragem: ${widget.car.km}',
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
 
-                              ..._gastos.map((gasto) {
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 8.0),
-                                  child: Material(
-                                    color: Colors
-                                        .grey[300], // Cor das cápsulas internas
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: InkWell(
-                                      borderRadius: BorderRadius.circular(8),
-                                      onTap: () {
-                                        Navigator.pushNamed(
-                                          context,
-                                          '/view-expense',
-                                          arguments: gasto,
-                                        );
-                                      },
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 12.0,
-                                          horizontal: 16.0,
+                              Stack(
+                                children: [
+                                  Container(
+                                    height: 220,
+                                    width: double.infinity,
+                                    color: Colors.grey[300],
+                                    child: const Center(
+                                      child: Icon(
+                                        Icons.directions_car,
+                                        size: 80,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    bottom: 12,
+                                    right: 12,
+                                    child: CircleAvatar(
+                                      radius: 18,
+                                      backgroundColor: const Color.fromRGBO(
+                                        158,
+                                        158,
+                                        158,
+                                        0.9,
+                                      ),
+                                      child: IconButton(
+                                        padding: EdgeInsets.zero,
+                                        icon: const Icon(
+                                          Icons.edit,
+                                          color: Colors.black54,
+                                          size: 20,
                                         ),
-                                        child: Text(
-                                          "${gasto.descricao}: R\$ ${gasto.valor.toStringAsFixed(2)}",
-                                          style: const TextStyle(
+                                        onPressed: () {
+                                          debugPrint("Editar imagem clicado");
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              Container(
+                                color: Colors.grey[400],
+                                padding: const EdgeInsets.all(16.0),
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    Text(
+                                      "Gasto mensal deste mês: R\$ ${_monthlyTotal.toStringAsFixed(2)}",
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        color: Colors.black,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      "Gasto por KM: R\$ ${_costPerKm.toStringAsFixed(2)}",
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        color: Colors.black,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                      ),
+                                    ),
+
+                                    Text(
+                                      'Ano: ${(_currentCar ?? widget.car).ano}',
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        color: Colors.black,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Quilometragem: ${(_currentCar ?? widget.car).km}',
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        color: Colors.black,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+
+                                    ExpansionTile(
+                                      tilePadding: EdgeInsets.zero,
+                                      title: const Text(
+                                        'Selecionar mês',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.black,
+                                        ),
+                                      ),
+                                      children: [
+                                        if (_gastosPorMes.isEmpty)
+                                          const Padding(
+                                            padding: EdgeInsets.symmetric(
+                                              vertical: 8.0,
+                                            ),
+                                            child: Text(
+                                              'Nenhum gasto registrado.',
+                                            ),
+                                          )
+                                        else
+                                          ..._gastosPorMes.keys
+                                              .toList()
+                                              .toList()
+                                              .map((key) {
+                                                final gastosDoMes =
+                                                    _gastosPorMes[key] ??
+                                                    <Gasto>[];
+                                                final totalDoMes = gastosDoMes
+                                                    .fold<double>(
+                                                      0.0,
+                                                      (sum, gasto) =>
+                                                          sum + gasto.valor,
+                                                    );
+                                                return ListTile(
+                                                  dense: true,
+                                                  contentPadding:
+                                                      const EdgeInsets.symmetric(
+                                                        vertical: 2.0,
+                                                      ),
+                                                  title: Text(
+                                                    _formatarMes(key),
+                                                    style: const TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                  subtitle: Text(
+                                                    'Total: R\$ ${totalDoMes.toStringAsFixed(2)}',
+                                                  ),
+                                                  trailing:
+                                                      _mesSelecionado == key
+                                                      ? const Icon(
+                                                          Icons.check_circle,
+                                                          color:
+                                                              Colors.redAccent,
+                                                        )
+                                                      : const Icon(
+                                                          Icons.chevron_right,
+                                                        ),
+                                                  onTap: () {
+                                                    setState(() {
+                                                      _mesSelecionado = key;
+                                                      _monthlyTotal =
+                                                          totalDoMes;
+                                                    });
+                                                  },
+                                                );
+                                              }),
+                                      ],
+                                    ),
+
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      _mesSelecionado == null
+                                          ? 'Nenhum mês selecionado'
+                                          : 'Exibindo: ${_formatarMes(_mesSelecionado!)}',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+
+                                    ...(_mesSelecionado == null
+                                            ? <Gasto>[]
+                                            : _gastosPorMes[_mesSelecionado!] ??
+                                                  <Gasto>[])
+                                        .map((gasto) {
+                                          return Padding(
+                                            padding: const EdgeInsets.only(
+                                              bottom: 8.0,
+                                            ),
+                                            child: Material(
+                                              color: Colors.grey[300],
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              child: Row(
+                                                children: [
+                                                  Expanded(
+                                                    child: InkWell(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            8,
+                                                          ),
+                                                      onTap: () {
+                                                        Navigator.pushNamed(
+                                                          context,
+                                                          '/view-expense',
+                                                          arguments: gasto,
+                                                        );
+                                                      },
+                                                      child: Padding(
+                                                        padding:
+                                                            const EdgeInsets.symmetric(
+                                                              vertical: 12.0,
+                                                              horizontal: 16.0,
+                                                            ),
+                                                        child: Text(
+                                                          "${gasto.descricao}: R\$ ${gasto.valor.toStringAsFixed(2)}",
+                                                          style:
+                                                              const TextStyle(
+                                                                color: Colors
+                                                                    .black87,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                                fontSize: 15,
+                                                              ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  IconButton(
+                                                    icon: const Icon(
+                                                      Icons.delete,
+                                                      color: Colors.redAccent,
+                                                    ),
+                                                    onPressed: () =>
+                                                        _confirmDeleteGasto(
+                                                          gasto,
+                                                        ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          );
+                                        }),
+
+                                    const SizedBox(height: 4),
+                                    if ((_mesSelecionado == null
+                                            ? <Gasto>[]
+                                            : _gastosPorMes[_mesSelecionado!] ??
+                                                  <Gasto>[])
+                                        .isEmpty)
+                                      Container(
+                                        width: double.infinity,
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey[300],
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                        ),
+                                        padding: const EdgeInsets.all(16.0),
+                                        child: const Text(
+                                          'Nenhum gasto registrado para este mês.',
+                                          style: TextStyle(
                                             color: Colors.black87,
                                             fontWeight: FontWeight.bold,
                                             fontSize: 15,
                                           ),
                                         ),
                                       ),
-                                    ),
-                                  ),
-                                );
-                              }),
-
-                              const SizedBox(height: 4),
-                              if (_gastos.isEmpty)
-                                Container(
-                                  width: double.infinity,
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey[300],
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  padding: const EdgeInsets.all(16.0),
-                                  child: const Text(
-                                    'Nenhum gasto adicional registrado.',
-                                    style: TextStyle(
-                                      color: Colors.black87,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 15,
-                                    ),
-                                  ),
+                                  ],
                                 ),
+                              ),
                             ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () async {
+                              await Navigator.pushNamed(
+                                context,
+                                '/add-expense',
+                                arguments: _currentCar ?? widget.car,
+                              );
+                              _loadGastos();
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.grey[300],
+                              foregroundColor: Colors.black,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              elevation: 1,
+                            ),
+                            child: const Text(
+                              'ADICIONAR GASTO',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                                letterSpacing: 1.1,
+                              ),
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
-
-                  const SizedBox(height: 24),
-
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        await Navigator.pushNamed(context, '/add-expense', arguments: widget.car);
-                        _loadGastos();
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.grey[300],
-                        foregroundColor: Colors.black,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        elevation: 1,
-                      ),
-                      child: const Text(
-                        'ADICIONAR GASTO',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                          letterSpacing: 1.1,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
-          ),
-        ),
-      ),
     );
   }
 }

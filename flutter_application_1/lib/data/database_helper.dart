@@ -3,6 +3,7 @@ import 'package:path/path.dart';
 import 'dart:io';
 import '../models/car.dart';
 import '../models/gasto.dart';
+import '../services/expense_logic.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._();
@@ -33,8 +34,9 @@ class DatabaseHelper {
 
     return await openDatabase(
       dbPath,
-      version: 1,
+      version: 2,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
   }
 
@@ -45,6 +47,7 @@ class DatabaseHelper {
         marca TEXT NOT NULL,
         modelo TEXT NOT NULL,
         ano INTEGER NOT NULL,
+        kmInicial INTEGER NOT NULL,
         km INTEGER NOT NULL,
         image TEXT,
         gastos REAL NOT NULL
@@ -64,6 +67,18 @@ class DatabaseHelper {
         FOREIGN KEY (carId) REFERENCES cars (id) ON DELETE CASCADE
       )
     ''');
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute('ALTER TABLE cars ADD COLUMN kmInicial INTEGER');
+      await db.rawUpdate(
+        'UPDATE cars SET kmInicial = km WHERE kmInicial IS NULL',
+      );
+      await db.rawUpdate(
+        'UPDATE cars SET kmInicial = 0 WHERE kmInicial IS NULL',
+      );
+    }
   }
 
   Future<int> insertCar(Car car) async {
@@ -98,13 +113,34 @@ class DatabaseHelper {
     );
   }
 
+  Future<Car> syncCarMetrics(int carId, {DateTime? referenceDate}) async {
+    final car = await getCarById(carId);
+    if (car == null) {
+      throw Exception('Veículo não encontrado');
+    }
+
+    final gastos = await getGastosByCarId(carId);
+    final monthlyTotal = calculateMonthlyTotal(
+      gastos: gastos,
+      referenceDate: referenceDate ?? DateTime.now(),
+    );
+    final latestMileage = gastos.isEmpty
+        ? car.kmInicial
+        : gastos
+              .map((gasto) => gasto.quilometragem)
+              .reduce((a, b) => a > b ? a : b);
+    final currentMileage = latestMileage >= car.kmInicial
+        ? latestMileage
+        : car.kmInicial;
+
+    final updatedCar = car.copy(km: currentMileage, gastos: monthlyTotal);
+    await updateCar(updatedCar);
+    return updatedCar;
+  }
+
   Future<int> deleteCar(int id) async {
     final db = await database;
-    return await db.delete(
-      'cars',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    return await db.delete('cars', where: 'id = ?', whereArgs: [id]);
   }
 
   Future<int> insertGasto(Gasto gasto) async {
@@ -146,11 +182,7 @@ class DatabaseHelper {
 
   Future<int> deleteGasto(int id) async {
     final db = await database;
-    return await db.delete(
-      'gastos',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    return await db.delete('gastos', where: 'id = ?', whereArgs: [id]);
   }
 
   Future<double> getTotalGastosByCarId(int carId) async {

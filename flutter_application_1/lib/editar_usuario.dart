@@ -50,13 +50,25 @@ class _AccountPageState extends State<AccountPage> {
         elevation: 0,
         centerTitle: true,
         // Título AUTOCASH adicionado
-        title: const Text(
-          "autocash",
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.5,
-          ),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Hero(
+              tag: 'app_brand_icon',
+              child: Icon(Icons.directions_car, color: Colors.white, size: 20),
+            ),
+            SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                'autocash',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5,
+                ),
+              ),
+            ),
+          ],
         ),
         // Botão de voltar (seta)
         leading: IconButton(

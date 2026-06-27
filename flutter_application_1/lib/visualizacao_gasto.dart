@@ -39,13 +39,25 @@ class _VisualizacaoGastoPageState extends State<VisualizacaoGastoPage> {
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          "Manutenção",
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
-          ),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Hero(
+              tag: 'app_brand_icon',
+              child: Icon(Icons.directions_car, color: Colors.white, size: 20),
+            ),
+            SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                'Manutenção',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ),
+          ],
         ),
         actions: [
           IconButton(
@@ -101,12 +113,17 @@ class _VisualizacaoGastoPageState extends State<VisualizacaoGastoPage> {
                     // 2. Valor Gasto
                     _buildDisplayField(
                       label: 'Valor gasto:',
-                      value: _gasto != null ? r'R$ ' + _gasto!.valor.toStringAsFixed(2) : '',
+                      value: _gasto != null
+                          ? r'R$ ' + _gasto!.valor.toStringAsFixed(2)
+                          : '',
                     ),
                     const SizedBox(height: 16),
 
                     // 3. Data da Manutenção
-                    _buildDisplayField(label: 'Data:', value: _gasto?.data ?? ''),
+                    _buildDisplayField(
+                      label: 'Data:',
+                      value: _gasto?.data ?? '',
+                    ),
                     const SizedBox(height: 16),
 
                     // 4. Quilometragem do Veículo

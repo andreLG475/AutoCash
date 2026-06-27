@@ -35,6 +35,7 @@ class _CadastroVeiculosPageState extends State<CadastroVeiculosPage> {
       modelo: _modeloController.text.trim(),
       ano: int.parse(_anoController.text.trim()),
       km: int.parse(_kmController.text.trim()),
+      kmInicial: int.parse(_kmController.text.trim()),
       image: '',
       gastos: 0.0,
     );
@@ -64,13 +65,25 @@ class _CadastroVeiculosPageState extends State<CadastroVeiculosPage> {
         backgroundColor: Colors.redAccent[700],
         elevation: 0,
         centerTitle: true,
-        title: const Text(
-          'Cadastro de Veículos',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.5,
-          ),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Hero(
+              tag: 'app_brand_icon',
+              child: Icon(Icons.directions_car, color: Colors.white, size: 20),
+            ),
+            SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                'Cadastro de Veículos',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5,
+                ),
+              ),
+            ),
+          ],
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),

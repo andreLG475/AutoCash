@@ -12,13 +12,25 @@ class RegisterPage extends StatelessWidget {
         backgroundColor: Colors.redAccent[700],
         elevation: 0,
         centerTitle: true,
-        title: const Text(
-          "autocash",
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.5,
-          ),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Hero(
+              tag: 'app_brand_icon',
+              child: Icon(Icons.directions_car, color: Colors.white, size: 20),
+            ),
+            SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                'autocash',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
       body: SafeArea(

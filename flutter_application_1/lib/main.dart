@@ -10,6 +10,7 @@ import 'visualizar_veiculo.dart';
 import 'exercise_all.dart';
 import 'data/database_helper.dart';
 import 'models/car.dart';
+import 'models/gasto.dart';
 
 void main() {
   runApp(const MyApp());
@@ -68,6 +69,7 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   List<Car> _carros = [];
+  final Map<int, List<Gasto>> _gastosPorCarro = {};
   bool _loading = true;
 
   @override
@@ -78,8 +80,27 @@ class _MainScreenState extends State<MainScreen> {
 
   Future<void> _loadCars() async {
     final carros = await DatabaseHelper.instance.getCars();
+    final carrosAtualizados = <Car>[];
+    final gastosPorCarro = <int, List<Gasto>>{};
+
+    for (final carro in carros) {
+      if (carro.id != null) {
+        final updatedCar = await DatabaseHelper.instance.syncCarMetrics(
+          carro.id!,
+        );
+        carrosAtualizados.add(updatedCar);
+        gastosPorCarro[carro.id!] = await DatabaseHelper.instance
+            .getGastosByCarId(carro.id!);
+      } else {
+        carrosAtualizados.add(carro);
+      }
+    }
+
     setState(() {
-      _carros = carros;
+      _carros = carrosAtualizados;
+      _gastosPorCarro
+        ..clear()
+        ..addAll(gastosPorCarro);
       _loading = false;
     });
   }
@@ -91,13 +112,25 @@ class _MainScreenState extends State<MainScreen> {
         backgroundColor: Colors.redAccent[700],
         elevation: 0,
         centerTitle: true,
-        title: const Text(
-          "autocash",
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.5,
-          ),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Hero(
+              tag: 'app_brand_icon',
+              child: Icon(Icons.directions_car, color: Colors.white, size: 20),
+            ),
+            SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                'autocash',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5,
+                ),
+              ),
+            ),
+          ],
         ),
         leading: IconButton(
           icon: const Icon(Icons.exit_to_app, color: Colors.white),
@@ -204,22 +237,7 @@ class _MainScreenState extends State<MainScreen> {
                                             maxWidth: 220,
                                           ),
                                           child: Text(
-                                            carro.marca,
-                                            overflow: TextOverflow.ellipsis,
-                                            maxLines: 1,
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ),
-                                        ConstrainedBox(
-                                          constraints: const BoxConstraints(
-                                            maxWidth: 220,
-                                          ),
-                                          child: Text(
-                                            carro.modelo,
+                                            '${carro.marca} ${carro.modelo}',
                                             overflow: TextOverflow.ellipsis,
                                             maxLines: 1,
                                             style: const TextStyle(
@@ -259,13 +277,90 @@ class _MainScreenState extends State<MainScreen> {
                                       vertical: 10.0,
                                       horizontal: 16.0,
                                     ),
-                                    child: Text(
-                                      "GASTO MENSAL ATUAL: R\$ ${carro.gastos.toStringAsFixed(2)}",
-                                      style: const TextStyle(
-                                        color: Colors.black,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                      ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          "GASTO MENSAL ATUAL: R\$ ${carro.gastos.toStringAsFixed(2)}",
+                                          style: const TextStyle(
+                                            color: Colors.black,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Container(
+                                          width: double.infinity,
+                                          padding: const EdgeInsets.all(10.0),
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey[400],
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                          child: Builder(
+                                            builder: (_) {
+                                              final gastos =
+                                                  _gastosPorCarro[carro.id!] ??
+                                                  [];
+                                              final ultimosGastos = gastos
+                                                  .take(3)
+                                                  .toList();
+                                              final temMais = gastos.length > 3;
+
+                                              if (ultimosGastos.isEmpty) {
+                                                return const Text(
+                                                  'Nenhuma manutenção registrada.',
+                                                  style: TextStyle(
+                                                    color: Colors.black87,
+                                                    fontSize: 12,
+                                                  ),
+                                                );
+                                              }
+
+                                              return Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  ...ultimosGastos.map((gasto) {
+                                                    return Padding(
+                                                      padding:
+                                                          const EdgeInsets.only(
+                                                            bottom: 4.0,
+                                                          ),
+                                                      child: Text(
+                                                        '${gasto.descricao}: R\$ ${gasto.valor.toStringAsFixed(2)}',
+                                                        style: const TextStyle(
+                                                          color: Colors.black87,
+                                                          fontSize: 12,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                        ),
+                                                      ),
+                                                    );
+                                                  }),
+                                                  if (temMais)
+                                                    const Padding(
+                                                      padding: EdgeInsets.only(
+                                                        top: 2.0,
+                                                      ),
+                                                      child: Text(
+                                                        'outros...',
+                                                        style: TextStyle(
+                                                          color: Colors.black54,
+                                                          fontSize: 12,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                ],
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ],
