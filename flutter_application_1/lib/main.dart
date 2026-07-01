@@ -135,6 +135,7 @@ class _MainScreenState extends State<MainScreen> {
         leading: IconButton(
           icon: const Icon(Icons.exit_to_app, color: Colors.white),
           onPressed: () {
+            DatabaseHelper.instance.setCurrentUserId(null);
             Navigator.pushNamedAndRemoveUntil(
               context,
               '/login',

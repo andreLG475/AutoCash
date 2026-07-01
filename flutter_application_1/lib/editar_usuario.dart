@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'data/database_helper.dart';
+import 'models/user.dart';
+
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
 
@@ -11,13 +14,33 @@ class _AccountPageState extends State<AccountPage> {
   final _emailController = TextEditingController();
   final _senhaController = TextEditingController();
   final _nomeController = TextEditingController();
+  User? _currentUser;
+  bool _loading = true;
 
   @override
   void initState() {
     super.initState();
-    _emailController.text = 'Meuturbo12309@gmail.com';
-    _senhaController.text = '1234567';
-    _nomeController.text = 'Usuário 1';
+    _loadCurrentUser();
+  }
+
+  Future<void> _loadCurrentUser() async {
+    final userId = DatabaseHelper.instance.currentUserId;
+    if (userId == null) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+      return;
+    }
+
+    final user = await DatabaseHelper.instance.getUserById(userId);
+    if (!mounted) return;
+
+    setState(() {
+      _currentUser = user;
+      _emailController.text = user?.email ?? '';
+      _senhaController.text = user?.password ?? '';
+      _nomeController.text = user?.name ?? '';
+      _loading = false;
+    });
   }
 
   @override
@@ -28,15 +51,45 @@ class _AccountPageState extends State<AccountPage> {
     super.dispose();
   }
 
-  void _saveChanges() {
+  Future<void> _saveChanges() async {
+    final name = _nomeController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _senhaController.text;
+
+    if (name.isEmpty || email.isEmpty || password.isEmpty) {
+      _showMessage('Preencha todos os campos.');
+      return;
+    }
+
+    if (_currentUser?.id == null) {
+      _showMessage('Usuário não carregado.');
+      return;
+    }
+
+    try {
+      final updatedUser = await DatabaseHelper.instance.updateUserProfile(
+        userId: _currentUser!.id!,
+        name: name,
+        email: email,
+        password: password,
+      );
+
+      setState(() => _currentUser = updatedUser);
+      _showMessage('Alterações salvas com sucesso!', isSuccess: true);
+    } catch (e) {
+      _showMessage('Erro ao salvar: $e');
+    }
+  }
+
+  void _showMessage(String message, {bool isSuccess = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
+      SnackBar(
         content: Text(
-          'Alterações salvas com sucesso!',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          message,
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: Colors.green,
-        duration: Duration(seconds: 3),
+        backgroundColor: isSuccess ? Colors.green : Colors.redAccent[700],
+        duration: const Duration(seconds: 3),
       ),
     );
   }
@@ -135,10 +188,10 @@ class _AccountPageState extends State<AccountPage> {
                   const SizedBox(height: 16),
 
                   // Nome do usuário centralizado em destaque
-                  const Text(
-                    'Usuário 1',
+                  Text(
+                    _currentUser?.name ?? 'Usuário',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.w900,
                       color: Colors.black,
@@ -178,7 +231,7 @@ class _AccountPageState extends State<AccountPage> {
                   // Botão Salvar
                   Center(
                     child: ElevatedButton(
-                      onPressed: _saveChanges,
+                      onPressed: _loading ? null : _saveChanges,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.grey[300],
                         foregroundColor: Colors.black,
@@ -194,14 +247,20 @@ class _AccountPageState extends State<AccountPage> {
                           ),
                         ),
                       ),
-                      child: const Text(
-                        'SALVAR',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
+                      child: _loading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Text(
+                              'SALVAR',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
                     ),
                   ),
                 ],

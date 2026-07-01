@@ -1,7 +1,70 @@
 import 'package:flutter/material.dart';
 
-class LoginPage extends StatelessWidget {
+import 'data/database_helper.dart';
+
+class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final _identifierController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _loading = false;
+
+  @override
+  void dispose() {
+    _identifierController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _login() async {
+    final identifier = _identifierController.text.trim();
+    final password = _passwordController.text;
+
+    if (identifier.isEmpty || password.isEmpty) {
+      _showMessage('Informe e-mail e senha para entrar.');
+      return;
+    }
+
+    setState(() => _loading = true);
+
+    try {
+      final user = await DatabaseHelper.instance.authenticateUser(
+        identifier: identifier,
+        password: password,
+      );
+
+      if (!mounted) return;
+
+      if (user == null) {
+        _showMessage('E-mail ou senha inválidos.');
+        return;
+      }
+
+      DatabaseHelper.instance.setCurrentUserId(user.id);
+      Navigator.pushReplacementNamed(context, '/home');
+    } catch (e) {
+      if (!mounted) return;
+      _showMessage('Erro ao entrar: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: const TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.redAccent[700],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -66,12 +129,18 @@ class LoginPage extends StatelessWidget {
                   const SizedBox(height: 48),
 
                   _buildLabelAndField(
-                    label: 'Nome ou Email',
+                    controller: _identifierController,
+                    label: 'E-mail',
                     obscureText: false,
+                    keyboardType: TextInputType.emailAddress,
                   ),
                   const SizedBox(height: 20),
 
-                  _buildLabelAndField(label: 'Senha', obscureText: true),
+                  _buildLabelAndField(
+                    controller: _passwordController,
+                    label: 'Senha',
+                    obscureText: true,
+                  ),
                   const SizedBox(height: 24),
 
                   TextButton(
@@ -94,8 +163,7 @@ class LoginPage extends StatelessWidget {
                   // Botão de Login
                   Center(
                     child: ElevatedButton(
-                      onPressed: () =>
-                          Navigator.pushReplacementNamed(context, '/home'),
+                      onPressed: _loading ? null : _login,
                       style: ElevatedButton.styleFrom(
                         backgroundColor:
                             Colors.grey[300], // Fundo cinza do botão
@@ -113,14 +181,20 @@ class LoginPage extends StatelessWidget {
                           ), // Borda escura elegante
                         ),
                       ),
-                      child: const Text(
-                        'LOGIN',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
+                      child: _loading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Text(
+                              'LOGIN',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
                     ),
                   ),
                 ],
@@ -134,8 +208,10 @@ class LoginPage extends StatelessWidget {
 
   // Widget construtor dos campos com o exato padrão de escrita das outras páginas
   Widget _buildLabelAndField({
+    TextEditingController? controller,
     required String label,
     required bool obscureText,
+    TextInputType keyboardType = TextInputType.text,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -151,7 +227,9 @@ class LoginPage extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         TextFormField(
+          controller: controller,
           obscureText: obscureText,
+          keyboardType: keyboardType,
           style: const TextStyle(fontSize: 16),
           decoration: InputDecoration(
             filled: true,
