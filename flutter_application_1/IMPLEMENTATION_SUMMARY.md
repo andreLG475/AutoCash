@@ -1,8 +1,8 @@
 # AutoCash - Melhorias Implementadas
 
-## 📋 Resumo das Funcionalidades
+##  Resumo das Funcionalidades
 
-### 1️⃣ **Preenchimento Automático em Cadastro de Gastos**
+### 1️ **Preenchimento Automático em Cadastro de Gastos**
 
 O sistema agora **preenche automaticamente** campos quando você abre a tela de cadastro de gastos:
 
@@ -11,14 +11,14 @@ O sistema agora **preenche automaticamente** campos quando você abre a tela de 
 
 Isso torna o processo mais rápido - você só precisa fazer pequenas alterações se necessário.
 
-### 2️⃣ **Câmera e Galeria - Cadastro de Gastos**
+### 2️ **Câmera e Galeria - Cadastro de Gastos**
 
 Ao cadastrar um gasto, você agora pode **adicionar uma nota fiscal** de três formas:
 
 #### Opções disponíveis:
-1. **📸 Tirar Foto** - Usa a câmera do dispositivo
-2. **🖼️ Galeria** - Importa uma foto existente
-3. **📄 Importar Arquivo** - Importa PDF ou outros tipos de arquivo
+1. ** Tirar Foto** - Usa a câmera do dispositivo
+2. ** Galeria** - Importa uma foto existente
+3. ** Importar Arquivo** - Importa PDF ou outros tipos de arquivo
 
 #### Como usar:
 - Clique na área de "Nota fiscal" na tela de cadastro
@@ -27,13 +27,13 @@ Ao cadastrar um gasto, você agora pode **adicionar uma nota fiscal** de três f
 - Para trocar, clique novamente na área e selecione outra opção
 - Para remover, clique e escolha "Remover Arquivo"
 
-### 3️⃣ **Câmera e Galeria - Cadastro de Veículos**
+### 3️ **Câmera e Galeria - Cadastro de Veículos**
 
 Ao cadastrar um novo veículo, você agora pode **adicionar uma foto** do mesmo:
 
 #### Opções disponíveis:
-1. **📸 Tirar Foto** - Captura com a câmera do dispositivo
-2. **🖼️ Galeria** - Importa uma foto do acervo
+1. ** Tirar Foto** - Captura com a câmera do dispositivo
+2. ** Galeria** - Importa uma foto do acervo
 
 #### Como usar:
 - Clique na área de "Foto do veículo" na tela de cadastro
@@ -41,15 +41,15 @@ Ao cadastrar um novo veículo, você agora pode **adicionar uma foto** do mesmo:
 - A foto será exibida em tempo real
 - Para trocar, clique novamente e selecione outra foto
 
-## 🌐 Compatibilidade
+##  Compatibilidade
 
 Todas as funcionalidades funcionam em:
-- ✅ **iOS** (iPhone/iPad)
-- ✅ **Android** (Celulares/Tablets)
-- ✅ **Windows** (Desktop)
-- ✅ **Web** (Google Chrome e outros navegadores)
+- **iOS** (iPhone/iPad)
+- **Android** (Celulares/Tablets)
+- **Windows** (Desktop)
+- **Web** (Google Chrome e outros navegadores)
 
-## 📦 Dependências Adicionadas
+##  Dependências Adicionadas
 
 ```yaml
 image_picker: ^1.0.7      # Para câmera e galeria
@@ -58,7 +58,7 @@ path_provider: ^2.1.1     # Para gerenciar caminhos
 intl: ^0.19.0             # Para formatação de data
 ```
 
-## 🔧 Detalhes Técnicos
+##  Detalhes Técnicos
 
 ### Novo Serviço: `media_service.dart`
 
@@ -85,7 +85,7 @@ Funções disponíveis:
    - Preview da foto com opção de trocar
    - Foto salva no banco de dados
 
-## 💡 Fluxo de Uso
+##  Fluxo de Uso
 
 ### Cadastro de Gasto
 1. Tela abre com data de hoje pré-preenchida
@@ -101,15 +101,15 @@ Funções disponíveis:
 4. A foto é exibida na preview
 5. Clica em "ADICIONAR VEÍCULO"
 
-## 🎯 Benefícios
+##  Benefícios
 
-- ⚡ **Mais rápido** - Preenchimento automático reduz digitação
-- 📱 **Mais profissional** - Fotos e documentos digitais
-- 🎨 **Interface melhorada** - Feedback visual claro
-- 🌍 **Funciona em qualquer lugar** - iOS, Android, Windows, Web
-- 💾 **Tudo armazenado** - Fotos e PDFs no banco de dados
+-  **Mais rápido** - Preenchimento automático reduz digitação
+-  **Mais profissional** - Fotos e documentos digitais
+-  **Interface melhorada** - Feedback visual claro
+-  **Funciona em qualquer lugar** - iOS, Android, Windows, Web
+-  **Tudo armazenado** - Fotos e PDFs no banco de dados
 
-## ❓ FAQ
+##  FAQ
 
 **P: Preciso de permissões especiais?**
 R: Sim, o Flutter pedirá permissão de câmera e acesso a arquivos na primeira vez que usar.

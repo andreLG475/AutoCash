@@ -373,6 +373,7 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
                               ),
 
                               Container(
+                                color: Colors.grey[400],
                                 padding: const EdgeInsets.all(16.0),
                                 child: Column(
                                   crossAxisAlignment:
@@ -611,7 +612,7 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
                               _loadGastos();
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.grey[300],
+                              backgroundColor: Colors.grey[400],
                               foregroundColor: Colors.black,
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(
