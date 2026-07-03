@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'models/gasto.dart';
+import 'widgets/image_display_widget.dart';
 
 class VisualizacaoGastoPage extends StatefulWidget {
   const VisualizacaoGastoPage({super.key});
@@ -153,65 +154,7 @@ class _VisualizacaoGastoPageState extends State<VisualizacaoGastoPage> {
                           ),
                         ),
                         const SizedBox(height: 8),
-
-                        GestureDetector(
-                          onTap: () {
-                            debugPrint("Abrir ou baixar nota fiscal");
-                          },
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: const Color(
-                                0xFFF2F2F2,
-                              ), // Cinza de fundo das caixas
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(
-                                color: Colors.black54,
-                                width: 1,
-                              ),
-                            ),
-                            padding: const EdgeInsets.all(12.0),
-                            child: Column(
-                              children: [
-                                // Área de pré-visualização da imagem da nota
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(10),
-                                  child: Container(
-                                    width: double.infinity,
-                                    height: 180,
-                                    color: Colors.white,
-                                    child: const Icon(
-                                      Icons.receipt_long,
-                                      size: 60,
-                                      color: Colors.black38,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-
-                                // Texto descritivo do arquivo anexado
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: const [
-                                    Icon(
-                                      Icons.picture_as_pdf,
-                                      color: Colors.red,
-                                      size: 20,
-                                    ),
-                                    SizedBox(width: 6),
-                                    Text(
-                                      'PDF:nota fiscal 34364053',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                        color: Colors.black,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                        FileDisplay(filePath: _gasto?.notaFiscal, height: 180),
                       ],
                     ),
                   ],

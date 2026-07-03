@@ -1,4 +1,5 @@
-import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb, TargetPlatform;
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, kIsWeb, TargetPlatform;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart';
 import '../models/car.dart';
@@ -25,7 +26,9 @@ class DatabaseHelper {
 
   Future<Database> get database async {
     if (kIsWeb) {
-      throw UnsupportedError('Database directly não está disponível no web. Use fallback em memória.');
+      throw UnsupportedError(
+        'Database directly não está disponível no web. Use fallback em memória.',
+      );
     }
 
     if (_database != null) return _database!;
@@ -34,11 +37,10 @@ class DatabaseHelper {
   }
 
   bool get _isDesktop {
-    return !kIsWeb && (
-      defaultTargetPlatform == TargetPlatform.windows ||
-      defaultTargetPlatform == TargetPlatform.linux ||
-      defaultTargetPlatform == TargetPlatform.macOS
-    );
+    return !kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.windows ||
+            defaultTargetPlatform == TargetPlatform.linux ||
+            defaultTargetPlatform == TargetPlatform.macOS);
   }
 
   Future<Database> _initDatabase() async {
@@ -132,7 +134,10 @@ class DatabaseHelper {
 
     if (kIsWeb) {
       final user = User(
-        id: _webUsers.isEmpty ? 1 : _webUsers.map((u) => u.id ?? 0).reduce((a, b) => a > b ? a : b) + 1,
+        id: _webUsers.isEmpty
+            ? 1
+            : _webUsers.map((u) => u.id ?? 0).reduce((a, b) => a > b ? a : b) +
+                  1,
         name: name,
         email: normalizedEmail,
         password: password,
@@ -158,7 +163,10 @@ class DatabaseHelper {
     final normalizedIdentifier = identifier.trim().toLowerCase();
     if (kIsWeb) {
       final filtered = _webUsers.where(
-        (user) => user.email == normalizedIdentifier && user.password == password,
+        (user) =>
+            (user.email == normalizedIdentifier ||
+                user.name.toLowerCase() == normalizedIdentifier) &&
+            user.password == password,
       );
       return filtered.isEmpty ? null : filtered.first;
     }
@@ -166,8 +174,8 @@ class DatabaseHelper {
     final db = await database;
     final result = await db.query(
       'users',
-      where: '(email = ?) AND (password = ?)',
-      whereArgs: [normalizedIdentifier, password],
+      where: '(email = ? OR LOWER(name) = ?) AND password = ?',
+      whereArgs: [normalizedIdentifier, normalizedIdentifier, password],
     );
 
     if (result.isEmpty) {
@@ -243,11 +251,7 @@ class DatabaseHelper {
     final db = await database;
     await db.update(
       'users',
-      {
-        'name': name,
-        'email': normalizedEmail,
-        'password': password,
-      },
+      {'name': name, 'email': normalizedEmail, 'password': password},
       where: 'id = ?',
       whereArgs: [userId],
     );

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:io';
 
 import 'data/database_helper.dart';
 import 'models/car.dart';
+import 'services/media_service.dart';
 
 class CadastroVeiculosPage extends StatefulWidget {
   const CadastroVeiculosPage({super.key});
@@ -17,6 +19,8 @@ class _CadastroVeiculosPageState extends State<CadastroVeiculosPage> {
   final _modeloController = TextEditingController();
   final _anoController = TextEditingController();
   final _kmController = TextEditingController();
+  File? _carPhotoFile;
+  String? _carPhotoPath;
 
   @override
   void dispose() {
@@ -25,6 +29,87 @@ class _CadastroVeiculosPageState extends State<CadastroVeiculosPage> {
     _anoController.dispose();
     _kmController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handlePhotoUpload() async {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Selecione uma opção',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const Icon(Icons.camera_alt, color: Colors.blue),
+                title: const Text('Tirar Foto'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _takePhoto();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.image, color: Colors.green),
+                title: const Text('Escolher Foto da Galeria'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickPhoto();
+                },
+              ),
+              if (_carPhotoFile != null)
+                ListTile(
+                  leading: const Icon(Icons.close, color: Colors.red),
+                  title: const Text('Remover Foto'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    setState(() {
+                      _carPhotoFile = null;
+                      _carPhotoPath = null;
+                    });
+                  },
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _takePhoto() async {
+    final file = await MediaService.takePhotoFromCamera();
+    if (file != null) {
+      setState(() {
+        _carPhotoFile = file;
+        _carPhotoPath = file.path;
+      });
+      _showSuccessMessage('Foto capturada com sucesso!');
+    }
+  }
+
+  Future<void> _pickPhoto() async {
+    final file = await MediaService.pickPhotoFromGallery();
+    if (file != null) {
+      setState(() {
+        _carPhotoFile = file;
+        _carPhotoPath = file.path;
+      });
+      _showSuccessMessage('Foto selecionada com sucesso!');
+    }
+  }
+
+  void _showSuccessMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   Future<void> _saveCar() async {
@@ -36,7 +121,7 @@ class _CadastroVeiculosPageState extends State<CadastroVeiculosPage> {
       ano: int.parse(_anoController.text.trim()),
       km: int.parse(_kmController.text.trim()),
       kmInicial: int.parse(_kmController.text.trim()),
-      image: '',
+      image: _carPhotoPath ?? '',
       gastos: 0.0,
     );
 
@@ -145,19 +230,19 @@ class _CadastroVeiculosPageState extends State<CadastroVeiculosPage> {
                             _buildLabelAndField(
                               controller: _marcaController,
                               label: 'Marca:',
-                              hint: 'EX: Peugeot',
+                              hint: 'EX: Chevrolet',
                             ),
                             const SizedBox(height: 16),
                             _buildLabelAndField(
                               controller: _modeloController,
                               label: 'Modelo:',
-                              hint: 'EX: 206',
+                              hint: 'EX: Chevette',
                             ),
                             const SizedBox(height: 16),
                             _buildLabelAndField(
                               controller: _anoController,
                               label: 'Ano:',
-                              hint: 'EX: 2008',
+                              hint: 'EX: 1984',
                               keyboardType: TextInputType.number,
                               inputFormatters: [
                                 FilteringTextInputFormatter.digitsOnly,
@@ -193,34 +278,76 @@ class _CadastroVeiculosPageState extends State<CadastroVeiculosPage> {
                               color: Colors.grey[300],
                               child: InkWell(
                                 borderRadius: BorderRadius.circular(14),
-                                onTap: () {
-                                  debugPrint(
-                                    'Acionar câmera ou importar imagem do veículo',
-                                  );
-                                },
+                                onTap: _handlePhotoUpload,
                                 child: SizedBox(
-                                  height: 180,
-                                  child: Center(
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.upload_file,
-                                          size: 56,
-                                          color: Colors.grey[600],
-                                        ),
-                                        const SizedBox(height: 12),
-                                        Text(
-                                          'Tirar foto e importar arquivos',
-                                          style: TextStyle(
-                                            color: Colors.grey[700],
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 14,
+                                  height: _carPhotoFile != null ? 200 : 180,
+                                  child: _carPhotoFile != null
+                                      ? Stack(
+                                          fit: StackFit.expand,
+                                          children: [
+                                            ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(14),
+                                              child: Image.file(
+                                                _carPhotoFile!,
+                                                fit: BoxFit.cover,
+                                              ),
+                                            ),
+                                            Container(
+                                              decoration: BoxDecoration(
+                                                borderRadius:
+                                                    BorderRadius.circular(14),
+                                                color: Colors.black.withValues(
+                                                  alpha: 0.3,
+                                                ),
+                                              ),
+                                            ),
+                                            Center(
+                                              child: Column(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: [
+                                                  const Icon(
+                                                    Icons.camera_alt,
+                                                    size: 48,
+                                                    color: Colors.white,
+                                                  ),
+                                                  const SizedBox(height: 8),
+                                                  const Text(
+                                                    'Trocar Foto',
+                                                    style: TextStyle(
+                                                      color: Colors.white,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      fontSize: 14,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        )
+                                      : Center(
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                Icons.upload_file,
+                                                size: 56,
+                                                color: Colors.grey[600],
+                                              ),
+                                              const SizedBox(height: 12),
+                                              Text(
+                                                'Tirar foto e importar arquivos',
+                                                style: TextStyle(
+                                                  color: Colors.grey[700],
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ),
-                                      ],
-                                    ),
-                                  ),
                                 ),
                               ),
                             ),

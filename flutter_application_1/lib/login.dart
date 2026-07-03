@@ -26,7 +26,7 @@ class _LoginPageState extends State<LoginPage> {
     final password = _passwordController.text;
 
     if (identifier.isEmpty || password.isEmpty) {
-      _showMessage('Informe e-mail e senha para entrar.');
+      _showMessage('Informe usuário/e-mail e senha para entrar.');
       return;
     }
 
@@ -41,7 +41,7 @@ class _LoginPageState extends State<LoginPage> {
       if (!mounted) return;
 
       if (user == null) {
-        _showMessage('E-mail ou senha inválidos.');
+        _showMessage('Usuário/e-mail ou senha inválidos.');
         return;
       }
 
@@ -60,7 +60,10 @@ class _LoginPageState extends State<LoginPage> {
   void _showMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message, style: const TextStyle(fontWeight: FontWeight.bold)),
+        content: Text(
+          message,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: Colors.redAccent[700],
       ),
     );
@@ -130,7 +133,7 @@ class _LoginPageState extends State<LoginPage> {
 
                   _buildLabelAndField(
                     controller: _identifierController,
-                    label: 'E-mail',
+                    label: 'Usuário ou E-mail',
                     obscureText: false,
                     keyboardType: TextInputType.emailAddress,
                   ),

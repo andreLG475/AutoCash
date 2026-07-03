@@ -4,6 +4,7 @@ import 'data/database_helper.dart';
 import 'models/car.dart';
 import 'models/gasto.dart';
 import 'services/expense_logic.dart';
+import 'widgets/image_display_widget.dart';
 
 class VisualizarVeiculoPage extends StatefulWidget {
   const VisualizarVeiculoPage({super.key, required this.car});
@@ -334,17 +335,15 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
 
                               Stack(
                                 children: [
-                                  Container(
+                                  ImageDisplay(
+                                    imagePath:
+                                        (_currentCar ?? widget.car)
+                                            .image
+                                            .isNotEmpty
+                                        ? (_currentCar ?? widget.car).image
+                                        : null,
                                     height: 220,
-                                    width: double.infinity,
-                                    color: Colors.grey[300],
-                                    child: const Center(
-                                      child: Icon(
-                                        Icons.directions_car,
-                                        size: 80,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
+                                    defaultIcon: Icons.directions_car,
                                   ),
                                   Positioned(
                                     bottom: 12,
@@ -374,7 +373,6 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
                               ),
 
                               Container(
-                                color: Colors.grey[400],
                                 padding: const EdgeInsets.all(16.0),
                                 child: Column(
                                   crossAxisAlignment:

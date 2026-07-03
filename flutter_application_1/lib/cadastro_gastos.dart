@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:io';
 
 import 'data/database_helper.dart';
 import 'models/gasto.dart';
 import 'models/car.dart';
 import 'services/expense_logic.dart';
+import 'services/media_service.dart';
+import 'widgets/image_display_widget.dart';
 
 class CadastroGastosPage extends StatefulWidget {
   final Car? car;
@@ -25,17 +28,39 @@ class _CadastroGastosPageState extends State<CadastroGastosPage> {
 
   Car? _car;
   DateTime? _selectedDate;
+  File? _notaFiscalFile;
+  String? _notaFiscalPath;
 
   @override
   void initState() {
     super.initState();
     _loadCar();
+    _initializeAutoFill();
   }
 
   Future<void> _loadCar() async {
     if (widget.car != null) {
       setState(() {
         _car = widget.car;
+      });
+    }
+  }
+
+  Future<void> _initializeAutoFill() async {
+    // Preencher com a data de hoje
+    final today = DateTime.now();
+    setState(() {
+      _selectedDate = today;
+      _dataController.text = _formatDate(today);
+    });
+
+    // Esperar um pequeno delay para garantir que o carro foi carregado
+    await Future.delayed(const Duration(milliseconds: 100));
+
+    // Preencher quilometragem com o valor atual do carro
+    if (_car != null && _car!.km > 0) {
+      setState(() {
+        _quilometragemController.text = _car!.km.toString();
       });
     }
   }
@@ -48,6 +73,106 @@ class _CadastroGastosPageState extends State<CadastroGastosPage> {
     _quilometragemController.dispose();
     _descricaoDetalhadaController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleMediaUpload() async {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Selecione uma opção',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const Icon(Icons.camera_alt, color: Colors.blue),
+                title: const Text('Tirar Foto'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _takePhoto();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.image, color: Colors.green),
+                title: const Text('Escolher Foto da Galeria'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickPhoto();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.file_present, color: Colors.orange),
+                title: const Text('Importar Arquivo'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickFile();
+                },
+              ),
+              if (_notaFiscalFile != null)
+                ListTile(
+                  leading: const Icon(Icons.close, color: Colors.red),
+                  title: const Text('Remover Arquivo'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    setState(() {
+                      _notaFiscalFile = null;
+                      _notaFiscalPath = null;
+                    });
+                  },
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _takePhoto() async {
+    final file = await MediaService.takePhotoFromCamera();
+    if (file != null) {
+      setState(() {
+        _notaFiscalFile = file;
+        _notaFiscalPath = file.path;
+      });
+      _showSuccessMessage('Foto capturada com sucesso!');
+    }
+  }
+
+  Future<void> _pickPhoto() async {
+    final file = await MediaService.pickPhotoFromGallery();
+    if (file != null) {
+      setState(() {
+        _notaFiscalFile = file;
+        _notaFiscalPath = file.path;
+      });
+      _showSuccessMessage('Foto selecionada com sucesso!');
+    }
+  }
+
+  Future<void> _pickFile() async {
+    final file = await MediaService.pickFile();
+    if (file != null) {
+      setState(() {
+        _notaFiscalFile = file;
+        _notaFiscalPath = file.path;
+      });
+      _showSuccessMessage('Arquivo importado com sucesso!');
+    }
+  }
+
+  void _showSuccessMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   Future<void> _saveGasto() async {
@@ -126,6 +251,7 @@ class _CadastroGastosPageState extends State<CadastroGastosPage> {
       descricaoDetalhada: _descricaoDetalhadaController.text.trim().isEmpty
           ? null
           : _descricaoDetalhadaController.text.trim(),
+      notaFiscal: _notaFiscalPath,
     );
 
     await DatabaseHelper.instance.insertGasto(gasto);
@@ -367,44 +493,168 @@ class _CadastroGastosPageState extends State<CadastroGastosPage> {
                               ),
                             ),
                             const SizedBox(height: 8),
-                            Card(
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              color: Colors
-                                  .grey[300], // Caixa interna levemente mais clara
-                              child: InkWell(
-                                borderRadius: BorderRadius.circular(14),
-                                onTap: () {
-                                  debugPrint("Importar arquivo / Câmera");
-                                },
-                                child: SizedBox(
-                                  height: 180,
-                                  child: Center(
+                            if (_notaFiscalFile == null)
+                              Card(
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                color: Colors.grey[300],
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(14),
+                                  onTap: _handleMediaUpload,
+                                  child: const SizedBox(
+                                    height: 180,
                                     child: Column(
-                                      mainAxisSize: MainAxisSize.min,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
                                         Icon(
                                           Icons.upload_file,
                                           size: 56,
-                                          color: Colors.grey[600],
+                                          color: Colors.grey,
                                         ),
-                                        const SizedBox(height: 12),
+                                        SizedBox(height: 12),
                                         Text(
-                                          'Tirar foto e importar arquivos',
+                                          'Tirar foto ou importar arquivo',
                                           style: TextStyle(
-                                            color: Colors.grey[700],
+                                            color: Colors.black54,
                                             fontWeight: FontWeight.w600,
                                             fontSize: 14,
+                                          ),
+                                        ),
+                                        SizedBox(height: 4),
+                                        Text(
+                                          'Foto | PDF | Imagem | Arquivo',
+                                          style: TextStyle(
+                                            color: Colors.grey,
+                                            fontSize: 11,
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
                                 ),
+                              )
+                            else
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  // Preview do arquivo
+                                  FileDisplay(
+                                    filePath: _notaFiscalPath,
+                                    height: 200,
+                                    isClickable: false,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  // Info do arquivo
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue[50],
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: Colors.blue[200]!,
+                                      ),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Arquivo selecionado:',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: Colors.blue[700],
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        SelectableText(
+                                          MediaService.getFileName(
+                                            _notaFiscalFile!,
+                                          ),
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.black87,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              'Tamanho: ${MediaService.getFileSizeInMB(_notaFiscalFile!).toStringAsFixed(2)} MB',
+                                              style: const TextStyle(
+                                                fontSize: 10,
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                            GestureDetector(
+                                              onTap: () {
+                                                setState(() {
+                                                  _notaFiscalFile = null;
+                                                  _notaFiscalPath = null;
+                                                });
+                                              },
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 4,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.red[50],
+                                                  borderRadius:
+                                                      BorderRadius.circular(6),
+                                                  border: Border.all(
+                                                    color: Colors.red[300]!,
+                                                  ),
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    const Icon(
+                                                      Icons.close,
+                                                      size: 14,
+                                                      color: Colors.red,
+                                                    ),
+                                                    const SizedBox(width: 4),
+                                                    Text(
+                                                      'Remover',
+                                                      style: TextStyle(
+                                                        fontSize: 10,
+                                                        color: Colors.red[700],
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  // Botão para trocar arquivo
+                                  OutlinedButton.icon(
+                                    onPressed: _handleMediaUpload,
+                                    icon: const Icon(Icons.edit),
+                                    label: const Text('Trocar Arquivo'),
+                                    style: OutlinedButton.styleFrom(
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
                           ],
                         ),
                       ),

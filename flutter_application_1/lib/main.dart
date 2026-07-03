@@ -11,6 +11,7 @@ import 'exercise_all.dart';
 import 'data/database_helper.dart';
 import 'models/car.dart';
 import 'models/gasto.dart';
+import 'widgets/image_display_widget.dart';
 
 void main() {
   runApp(const MyApp());
@@ -103,6 +104,27 @@ class _MainScreenState extends State<MainScreen> {
         ..addAll(gastosPorCarro);
       _loading = false;
     });
+  }
+
+  /// Calcula o gasto do mês atual para um carro
+  double _calculateMonthlyExpense(int carId) {
+    final gastos = _gastosPorCarro[carId] ?? [];
+    final now = DateTime.now();
+    final currentMonthKey =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}';
+
+    double total = 0;
+    for (final gasto in gastos) {
+      final date = DateTime.tryParse(gasto.data);
+      if (date != null) {
+        final gastoMonthKey =
+            '${date.year}-${date.month.toString().padLeft(2, '0')}';
+        if (gastoMonthKey == currentMonthKey) {
+          total += gasto.valor;
+        }
+      }
+    }
+    return total;
   }
 
   @override
@@ -252,25 +274,12 @@ class _MainScreenState extends State<MainScreen> {
                                       ],
                                     ),
                                   ),
-                                  Image.network(
-                                    carro.image.isNotEmpty
+                                  ImageDisplay(
+                                    imagePath: carro.image.isNotEmpty
                                         ? carro.image
-                                        : 'https://via.placeholder.com/800x220?text=Sem+imagem',
+                                        : null,
                                     height: 220,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Container(
-                                        height: 220,
-                                        color: Colors.grey[300],
-                                        child: const Center(
-                                          child: Icon(
-                                            Icons.directions_car,
-                                            size: 60,
-                                            color: Colors.grey,
-                                          ),
-                                        ),
-                                      );
-                                    },
+                                    defaultIcon: Icons.directions_car,
                                   ),
                                   Container(
                                     color: Colors.grey[300],
@@ -283,7 +292,7 @@ class _MainScreenState extends State<MainScreen> {
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          "GASTO MENSAL ATUAL: R\$ ${carro.gastos.toStringAsFixed(2)}",
+                                          "GASTO MENSAL ATUAL: R\$ ${_calculateMonthlyExpense(carro.id!).toStringAsFixed(2)}",
                                           style: const TextStyle(
                                             color: Colors.black,
                                             fontWeight: FontWeight.bold,
