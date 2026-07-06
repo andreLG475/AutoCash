@@ -77,7 +77,6 @@ class _FileViewerPageState extends State<FileViewerPage> {
   @override
   Widget build(BuildContext context) {
     final ext = widget.filePath.split('.').last.toLowerCase();
-    final isPdf = ext == 'pdf';
     final isImage = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].contains(ext);
     final file = File(widget.filePath);
     final fileExists = file.existsSync();

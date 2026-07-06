@@ -3,12 +3,14 @@ class User {
   final String name;
   final String email;
   final String password;
+  final String? photoPath;
 
   const User({
     this.id,
     required this.name,
     required this.email,
     required this.password,
+    this.photoPath,
   });
 
   factory User.fromMap(Map<String, dynamic> map) {
@@ -17,6 +19,7 @@ class User {
       name: map['name'] as String,
       email: map['email'] as String,
       password: map['password'] as String,
+      photoPath: map['photoPath'] as String?,
     );
   }
 
@@ -26,6 +29,7 @@ class User {
       'name': name,
       'email': email,
       'password': password,
+      'photoPath': photoPath,
     };
   }
 
@@ -34,12 +38,14 @@ class User {
     String? name,
     String? email,
     String? password,
+    String? photoPath,
   }) {
     return User(
       id: id ?? this.id,
       name: name ?? this.name,
       email: email ?? this.email,
       password: password ?? this.password,
+      photoPath: photoPath ?? this.photoPath,
     );
   }
 }

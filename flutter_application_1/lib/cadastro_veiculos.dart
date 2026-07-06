@@ -83,22 +83,28 @@ class _CadastroVeiculosPageState extends State<CadastroVeiculosPage> {
   Future<void> _takePhoto() async {
     final file = await MediaService.takePhotoFromCamera();
     if (file != null) {
-      setState(() {
-        _carPhotoFile = file;
-        _carPhotoPath = file.path;
-      });
-      _showSuccessMessage('Foto capturada com sucesso!');
+      final savedPath = await MediaService.persistFile(file, subFolder: 'cars');
+      if (savedPath != null) {
+        setState(() {
+          _carPhotoFile = File(savedPath);
+          _carPhotoPath = savedPath;
+        });
+        _showSuccessMessage('Foto capturada com sucesso!');
+      }
     }
   }
 
   Future<void> _pickPhoto() async {
     final file = await MediaService.pickPhotoFromGallery();
     if (file != null) {
-      setState(() {
-        _carPhotoFile = file;
-        _carPhotoPath = file.path;
-      });
-      _showSuccessMessage('Foto selecionada com sucesso!');
+      final savedPath = await MediaService.persistFile(file, subFolder: 'cars');
+      if (savedPath != null) {
+        setState(() {
+          _carPhotoFile = File(savedPath);
+          _carPhotoPath = savedPath;
+        });
+        _showSuccessMessage('Foto selecionada com sucesso!');
+      }
     }
   }
 

@@ -1,7 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import 'data/database_helper.dart';
 import 'models/user.dart';
+import 'services/media_service.dart';
 
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
@@ -16,6 +19,7 @@ class _AccountPageState extends State<AccountPage> {
   final _nomeController = TextEditingController();
   User? _currentUser;
   bool _loading = true;
+  String? _avatarPath;
 
   @override
   void initState() {
@@ -39,6 +43,7 @@ class _AccountPageState extends State<AccountPage> {
       _emailController.text = user?.email ?? '';
       _senhaController.text = user?.password ?? '';
       _nomeController.text = user?.name ?? '';
+      _avatarPath = user?.photoPath;
       _loading = false;
     });
   }
@@ -72,6 +77,7 @@ class _AccountPageState extends State<AccountPage> {
         name: name,
         email: email,
         password: password,
+        photoPath: _avatarPath,
       );
 
       setState(() => _currentUser = updatedUser);
@@ -79,6 +85,65 @@ class _AccountPageState extends State<AccountPage> {
     } catch (e) {
       _showMessage('Erro ao salvar: $e');
     }
+  }
+
+  Future<void> _pickAvatarImage() async {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt, color: Colors.redAccent),
+                title: const Text('Tirar foto'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final file = await MediaService.takePhotoFromCamera();
+                  if (file != null) {
+                    final savedPath = await MediaService.persistFile(
+                      file,
+                      subFolder: 'avatars',
+                    );
+                    if (savedPath != null) {
+                      setState(() => _avatarPath = savedPath);
+                      _showMessage(
+                        'Foto atualizada com sucesso!',
+                        isSuccess: true,
+                      );
+                    }
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.photo_library,
+                  color: Colors.redAccent,
+                ),
+                title: const Text('Escolher da galeria'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final file = await MediaService.pickPhotoFromGallery();
+                  if (file != null) {
+                    final savedPath = await MediaService.persistFile(
+                      file,
+                      subFolder: 'avatars',
+                    );
+                    if (savedPath != null) {
+                      setState(() => _avatarPath = savedPath);
+                      _showMessage(
+                        'Foto atualizada com sucesso!',
+                        isSuccess: true,
+                      );
+                    }
+                  }
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   void _showMessage(String message, {bool isSuccess = false}) {
@@ -147,12 +212,27 @@ class _AccountPageState extends State<AccountPage> {
                     child: Stack(
                       alignment: Alignment.bottomRight,
                       children: [
-                        // Ícone principal de usuário
-                        const Icon(
-                          Icons.account_circle,
-                          size: 140,
-                          color: Colors.black, // Cor preta
-                        ),
+                        if (_avatarPath != null && _avatarPath!.isNotEmpty)
+                          ClipOval(
+                            child: Image.file(
+                              File(_avatarPath!),
+                              width: 140,
+                              height: 140,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  const Icon(
+                                    Icons.account_circle,
+                                    size: 140,
+                                    color: Colors.black,
+                                  ),
+                            ),
+                          )
+                        else
+                          const Icon(
+                            Icons.account_circle,
+                            size: 140,
+                            color: Colors.black,
+                          ),
                         // Botão flutuante de edição (Lápis) agora como IconButton
                         Positioned(
                           bottom: 10,
@@ -175,10 +255,7 @@ class _AccountPageState extends State<AccountPage> {
                                 size: 20,
                                 color: Colors.black87,
                               ),
-                              onPressed: () {
-                                // Ação para trocar a foto
-                                debugPrint("Trocar foto clicado");
-                              },
+                              onPressed: _pickAvatarImage,
                             ),
                           ),
                         ),

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 
 class MediaService {
   static final ImagePicker _imagePicker = ImagePicker();
@@ -37,16 +38,18 @@ class MediaService {
   /// Escolhe um arquivo (PDF, imagem, etc)
   static Future<File?> pickFile({List<String>? allowedExtensions}) async {
     try {
-      final FilePickerResult? result = await FilePicker.platform.pickFiles(
+      final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions:
             allowedExtensions ?? ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'bmp'],
         allowCompression: true,
       );
 
-      return result != null && result.files.single.path != null
-          ? File(result.files.single.path!)
-          : null;
+      final path = result?.files.single.path;
+      if (path == null) {
+        return null;
+      }
+      return File(path);
     } catch (e) {
       debugPrint('Erro ao escolher arquivo: $e');
       return null;
@@ -56,12 +59,37 @@ class MediaService {
   /// Escolhe múltiplas fotos
   static Future<List<File>?> pickMultiplePhotos() async {
     try {
-      final List<XFile>? photos = await _imagePicker.pickMultiImage(
+      final List<XFile> photos = await _imagePicker.pickMultiImage(
         imageQuality: 85,
       );
-      return photos != null ? photos.map((p) => File(p.path)).toList() : null;
+      return photos.map((p) => File(p.path)).toList();
     } catch (e) {
       debugPrint('Erro ao escolher múltiplas fotos: $e');
+      return null;
+    }
+  }
+
+  /// Copia um arquivo para o diretório de documentos do app para garantir persistência.
+  static Future<String?> persistFile(
+    File file, {
+    String subFolder = 'uploads',
+  }) async {
+    try {
+      final appDir = await getApplicationDocumentsDirectory();
+      final targetDir = Directory('${appDir.path}/$subFolder');
+      if (!await targetDir.exists()) {
+        await targetDir.create(recursive: true);
+      }
+
+      final lastSegment = file.uri.pathSegments.isNotEmpty
+          ? file.uri.pathSegments.last
+          : 'arquivo';
+      final fileName = '${DateTime.now().microsecondsSinceEpoch}_$lastSegment';
+      final copiedFile = File('${targetDir.path}/$fileName');
+      await file.copy(copiedFile.path);
+      return copiedFile.path;
+    } catch (e) {
+      debugPrint('Erro ao persistir arquivo: $e');
       return null;
     }
   }

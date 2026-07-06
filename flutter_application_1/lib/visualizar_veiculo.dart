@@ -1,9 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import 'data/database_helper.dart';
 import 'models/car.dart';
 import 'models/gasto.dart';
 import 'services/expense_logic.dart';
+import 'services/media_service.dart';
 import 'widgets/image_display_widget.dart';
 
 class VisualizarVeiculoPage extends StatefulWidget {
@@ -115,6 +118,65 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
       'Dezembro',
     ];
     return nomes[mes - 1];
+  }
+
+  Future<void> _updateCarImageFromFile(File file) async {
+    if (!mounted) return;
+
+    final savedPath = await MediaService.persistFile(file, subFolder: 'cars');
+    if (savedPath == null) return;
+
+    final updatedCar = (_currentCar ?? widget.car).copy(image: savedPath);
+    await DatabaseHelper.instance.updateCar(updatedCar);
+
+    if (!mounted) return;
+    setState(() => _currentCar = updatedCar);
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Foto do veículo atualizada!'),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
+  Future<void> _changeCarImage() async {
+    final sheet = showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt, color: Colors.redAccent),
+              title: const Text('Tirar foto'),
+              onTap: () async {
+                if (!mounted) return;
+                Navigator.pop(sheetContext);
+                final file = await MediaService.takePhotoFromCamera();
+                if (file != null) {
+                  await _updateCarImageFromFile(file);
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library, color: Colors.redAccent),
+              title: const Text('Escolher da galeria'),
+              onTap: () async {
+                if (!mounted) return;
+                Navigator.pop(sheetContext);
+                final file = await MediaService.pickPhotoFromGallery();
+                if (file != null) {
+                  await _updateCarImageFromFile(file);
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+
+    await sheet;
   }
 
   Future<void> _confirmDeleteGasto(Gasto gasto) async {
@@ -363,8 +425,8 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
                                           color: Colors.black54,
                                           size: 20,
                                         ),
-                                        onPressed: () {
-                                          debugPrint("Editar imagem clicado");
+                                        onPressed: () async {
+                                          await _changeCarImage();
                                         },
                                       ),
                                     ),

@@ -135,33 +135,51 @@ class _CadastroGastosPageState extends State<CadastroGastosPage> {
   Future<void> _takePhoto() async {
     final file = await MediaService.takePhotoFromCamera();
     if (file != null) {
-      setState(() {
-        _notaFiscalFile = file;
-        _notaFiscalPath = file.path;
-      });
-      _showSuccessMessage('Foto capturada com sucesso!');
+      final savedPath = await MediaService.persistFile(
+        file,
+        subFolder: 'gastos',
+      );
+      if (savedPath != null) {
+        setState(() {
+          _notaFiscalFile = File(savedPath);
+          _notaFiscalPath = savedPath;
+        });
+        _showSuccessMessage('Foto capturada com sucesso!');
+      }
     }
   }
 
   Future<void> _pickPhoto() async {
     final file = await MediaService.pickPhotoFromGallery();
     if (file != null) {
-      setState(() {
-        _notaFiscalFile = file;
-        _notaFiscalPath = file.path;
-      });
-      _showSuccessMessage('Foto selecionada com sucesso!');
+      final savedPath = await MediaService.persistFile(
+        file,
+        subFolder: 'gastos',
+      );
+      if (savedPath != null) {
+        setState(() {
+          _notaFiscalFile = File(savedPath);
+          _notaFiscalPath = savedPath;
+        });
+        _showSuccessMessage('Foto selecionada com sucesso!');
+      }
     }
   }
 
   Future<void> _pickFile() async {
     final file = await MediaService.pickFile();
     if (file != null) {
-      setState(() {
-        _notaFiscalFile = file;
-        _notaFiscalPath = file.path;
-      });
-      _showSuccessMessage('Arquivo importado com sucesso!');
+      final savedPath = await MediaService.persistFile(
+        file,
+        subFolder: 'gastos',
+      );
+      if (savedPath != null) {
+        setState(() {
+          _notaFiscalFile = File(savedPath);
+          _notaFiscalPath = savedPath;
+        });
+        _showSuccessMessage('Arquivo importado com sucesso!');
+      }
     }
   }
 

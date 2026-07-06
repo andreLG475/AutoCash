@@ -12,6 +12,7 @@ import 'data/database_helper.dart';
 import 'models/car.dart';
 import 'models/gasto.dart';
 import 'widgets/image_display_widget.dart';
+import 'widgets/profile_avatar.dart';
 
 void main() {
   runApp(const MyApp());
@@ -174,13 +175,9 @@ class _MainScreenState extends State<MainScreen> {
               onTap: () {
                 Navigator.pushNamed(context, '/edit-user');
               },
-              child: const CircleAvatar(
-                backgroundColor: Colors.transparent,
-                child: Icon(
-                  Icons.account_circle,
-                  color: Colors.white,
-                  size: 35,
-                ),
+              child: const ProfileAvatar(
+                radius: 18,
+                fallbackColor: Colors.transparent,
               ),
             ),
           ),

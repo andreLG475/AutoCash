@@ -1,5 +1,6 @@
 class Car {
   final int? id;
+  final int? userId;
   final String marca;
   final String modelo;
   final int ano;
@@ -10,6 +11,7 @@ class Car {
 
   Car({
     this.id,
+    this.userId,
     required this.marca,
     required this.modelo,
     required this.ano,
@@ -21,6 +23,7 @@ class Car {
 
   Car copy({
     int? id,
+    int? userId,
     String? marca,
     String? modelo,
     int? ano,
@@ -31,6 +34,7 @@ class Car {
   }) {
     return Car(
       id: id ?? this.id,
+      userId: userId ?? this.userId,
       marca: marca ?? this.marca,
       modelo: modelo ?? this.modelo,
       ano: ano ?? this.ano,
@@ -44,6 +48,7 @@ class Car {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
+      'userId': userId,
       'marca': marca,
       'modelo': modelo,
       'ano': ano,
@@ -57,6 +62,7 @@ class Car {
   factory Car.fromMap(Map<String, dynamic> map) {
     return Car(
       id: map['id'] as int?,
+      userId: map['userId'] as int?,
       marca: map['marca'] as String,
       modelo: map['modelo'] as String,
       ano: map['ano'] as int,

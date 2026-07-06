@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 
 /// Widget para exibir fotos de arquivo local, URL ou ícone padrão
 class ImageDisplay extends StatelessWidget {
@@ -62,7 +63,7 @@ class ImageDisplay extends StatelessWidget {
 }
 
 /// Widget para exibir PDF ou arquivo
-class FileDisplay extends StatelessWidget {
+class FileDisplay extends StatefulWidget {
   final String? filePath;
   final double height;
   final double width;
@@ -76,110 +77,148 @@ class FileDisplay extends StatelessWidget {
     this.isClickable = true,
   });
 
+  @override
+  State<FileDisplay> createState() => _FileDisplayState();
+}
+
+class _FileDisplayState extends State<FileDisplay> {
+  bool _isDownloading = false;
+
   String _getFileNameWithExtension() {
-    if (filePath == null || filePath!.isEmpty) return '';
-    final parts = filePath!.split('/');
-    final fileName = parts.last;
-    return fileName;
+    if (widget.filePath == null || widget.filePath!.isEmpty) return '';
+    final parts = widget.filePath!.split('/');
+    return parts.last;
   }
 
-  void _openFileViewer(BuildContext context) {
-    if (filePath == null || filePath!.isEmpty) return;
+  Future<void> _downloadFile() async {
+    if (widget.filePath == null || widget.filePath!.isEmpty) return;
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) {
-          // Import dinâmico para evitar import circular
-          return FutureBuilder(
-            future: Future.delayed(const Duration(milliseconds: 0), () async {
-              final module = await _loadFileViewer();
-              return module;
-            }),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return Scaffold(
-                  body: Center(
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        Colors.redAccent[700]!,
-                      ),
-                    ),
-                  ),
-                );
-              }
-              // Retorna a página de visualização importada
-              return _buildFileViewerPage(
-                context,
-                filePath!,
-                _getFileNameWithExtension(),
-              );
-            },
-          );
-        },
-      ),
-    );
-  }
+    final file = File(widget.filePath!);
+    if (!file.existsSync()) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Arquivo não encontrado'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
-  Future<dynamic> _loadFileViewer() async {
-    // Carrega dinâmicamente para evitar import circular
-    return await Future.delayed(const Duration(milliseconds: 100));
-  }
+    setState(() => _isDownloading = true);
 
-  Widget _buildFileViewerPage(
-    BuildContext context,
-    String filePath,
-    String fileName,
-  ) {
-    // Importação condicional do FileViewerPage
-    // Como não podemos fazer import condicional, vamos retornar um builder
-    return Builder(
-      builder: (context) {
-        // Aqui usamos reflection/tipo genérico para carregar dinamicamente
-        // Vamos criar uma estratégia alternativa sem import circular
-        return _FileViewerPageSimple(filePath: filePath, fileName: fileName);
-      },
-    );
+    try {
+      final downloadsDirectory = await getDownloadsDirectory();
+      if (downloadsDirectory == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Não foi possível acessar a pasta de Downloads'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      final destinationPath =
+          '${downloadsDirectory.path}/${_getFileNameWithExtension()}';
+      await file.copy(destinationPath);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Arquivo salvo em Downloads: ${_getFileNameWithExtension()}',
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro ao baixar: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isDownloading = false);
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (filePath == null || filePath!.isEmpty) {
+    if (widget.filePath == null || widget.filePath!.isEmpty) {
       return _buildEmpty();
     }
 
-    final file = File(filePath!);
+    final file = File(widget.filePath!);
     if (!file.existsSync()) {
       return _buildEmpty();
     }
 
-    final ext = filePath!.split('.').last.toLowerCase();
+    final ext = widget.filePath!.split('.').last.toLowerCase();
     final isPdf = ext == 'pdf';
     final isImage = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].contains(ext);
     final fileName = _getFileNameWithExtension();
 
-    // Container clicável
     Widget content;
 
     if (isImage) {
-      content = ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Image.file(
-          file,
-          height: height,
-          width: width,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => _buildEmpty(),
-        ),
+      content = Stack(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.file(
+              file,
+              height: widget.height,
+              width: widget.width,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => _buildEmpty(),
+            ),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+              decoration: const BoxDecoration(
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(12),
+                  bottomRight: Radius.circular(12),
+                ),
+                color: Color.fromRGBO(0, 0, 0, 0.65),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.download, color: Colors.white, size: 16),
+                  const SizedBox(width: 6),
+                  Text(
+                    _isDownloading ? 'Baixando...' : 'Baixar arquivo',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       );
     } else if (isPdf) {
       content = Container(
-        height: height,
-        width: width,
+        height: widget.height,
+        width: widget.width,
         decoration: BoxDecoration(
           color: Colors.grey[200],
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.blue, width: 2),
+          border: Border.all(color: Colors.redAccent, width: 2),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -201,22 +240,28 @@ class FileDisplay extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            Text(
-              'Toque para visualizar',
-              style: TextStyle(
-                fontSize: 10,
-                color: Colors.blue[600],
-                fontStyle: FontStyle.italic,
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.redAccent[700],
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: const Text(
+                'Baixar arquivo',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ],
         ),
       );
     } else {
-      // Arquivo desconhecido
       content = Container(
-        height: height,
-        width: width,
+        height: widget.height,
+        width: widget.width,
         decoration: BoxDecoration(
           color: Colors.grey[200],
           borderRadius: BorderRadius.circular(12),
@@ -242,12 +287,19 @@ class FileDisplay extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            Text(
-              'Toque para abrir',
-              style: TextStyle(
-                fontSize: 10,
-                color: Colors.orange[600],
-                fontStyle: FontStyle.italic,
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.redAccent[700],
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: const Text(
+                'Baixar arquivo',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ],
@@ -255,10 +307,9 @@ class FileDisplay extends StatelessWidget {
       );
     }
 
-    // Se clicável, envolver em GestureDetector
-    if (isClickable) {
+    if (widget.isClickable) {
       return GestureDetector(
-        onTap: () => _openFileViewer(context),
+        onTap: _isDownloading ? null : _downloadFile,
         child: MouseRegion(cursor: SystemMouseCursors.click, child: content),
       );
     }
@@ -268,8 +319,8 @@ class FileDisplay extends StatelessWidget {
 
   Widget _buildEmpty() {
     return Container(
-      height: height,
-      width: width,
+      height: widget.height,
+      width: widget.width,
       decoration: BoxDecoration(
         color: Colors.grey[300],
         borderRadius: BorderRadius.circular(12),
@@ -343,7 +394,6 @@ class _FileViewerPageSimpleState extends State<_FileViewerPageSimple> {
   @override
   Widget build(BuildContext context) {
     final ext = widget.filePath.split('.').last.toLowerCase();
-    final isPdf = ext == 'pdf';
     final isImage = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].contains(ext);
     final file = File(widget.filePath);
     final fileExists = file.existsSync();
@@ -446,12 +496,11 @@ class _FileViewerPageSimpleState extends State<_FileViewerPageSimple> {
                         )
                       : const Icon(Icons.download),
                   label: Text(
-                    _isDownloading
-                        ? 'Processando...'
-                        : 'Visualizar em Tela Cheia',
+                    _isDownloading ? 'Baixando...' : 'Baixar Arquivo',
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
                   ),
                 ),
@@ -516,8 +565,8 @@ class _FileViewerPageSimpleState extends State<_FileViewerPageSimple> {
             const SizedBox(height: 12),
             Text(
               isPdf
-                  ? 'Para visualizar este PDF, use seu leitor favorito após salvar.'
-                  : 'Para visualizar este arquivo, use um aplicativo compatível após salvar.',
+                  ? 'Use o botão abaixo para baixar este PDF em Downloads.'
+                  : 'Use o botão abaixo para baixar este arquivo em Downloads.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 14, color: Colors.grey[600]),
             ),

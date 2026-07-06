@@ -13,8 +13,6 @@ class DatabaseHelper {
   static int? _currentUserId;
 
   final List<User> _webUsers = [];
-  final List<Car> _webCars = [];
-  final List<Gasto> _webGastos = [];
 
   DatabaseHelper._();
 
@@ -51,18 +49,33 @@ class DatabaseHelper {
 
     final dbPath = join(await getDatabasesPath(), 'autocash.db');
 
-    return await openDatabase(
+    final db = await openDatabase(
       dbPath,
-      version: 3,
+      version: 4,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
+
+    await _ensureSchema(db);
+    return db;
+  }
+
+  Future<void> resetDatabase() async {
+    final db = _database;
+    if (db != null) {
+      await db.close();
+      _database = null;
+    }
+
+    final dbPath = join(await getDatabasesPath(), 'autocash.db');
+    await deleteDatabase(dbPath);
   }
 
   Future<void> _onCreate(Database db, int version) async {
     await db.execute('''
       CREATE TABLE cars(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        userId INTEGER,
         marca TEXT NOT NULL,
         modelo TEXT NOT NULL,
         ano INTEGER NOT NULL,
@@ -92,9 +105,30 @@ class DatabaseHelper {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         email TEXT NOT NULL UNIQUE,
-        password TEXT NOT NULL
+        password TEXT NOT NULL,
+        photoPath TEXT
       )
     ''');
+  }
+
+  Future<void> _ensureColumn(
+    Database db,
+    String tableName,
+    String columnName,
+    String definition,
+  ) async {
+    final result = await db.rawQuery('PRAGMA table_info($tableName)');
+    final hasColumn = result.any((row) => row['name'] == columnName);
+    if (!hasColumn) {
+      await db.execute(
+        'ALTER TABLE $tableName ADD COLUMN $columnName $definition',
+      );
+    }
+  }
+
+  Future<void> _ensureSchema(Database db) async {
+    await _ensureColumn(db, 'cars', 'userId', 'INTEGER');
+    await _ensureColumn(db, 'users', 'photoPath', 'TEXT');
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -117,6 +151,10 @@ class DatabaseHelper {
           password TEXT NOT NULL
         )
       ''');
+    }
+    if (oldVersion < 4) {
+      await _ensureColumn(db, 'cars', 'userId', 'INTEGER');
+      await _ensureColumn(db, 'users', 'photoPath', 'TEXT');
     }
   }
 
@@ -151,6 +189,7 @@ class DatabaseHelper {
       'name': name,
       'email': normalizedEmail,
       'password': password,
+      'photoPath': null,
     });
 
     return User(id: id, name: name, email: normalizedEmail, password: password);
@@ -226,6 +265,7 @@ class DatabaseHelper {
     required String name,
     required String email,
     required String password,
+    String? photoPath,
   }) async {
     final normalizedEmail = email.trim().toLowerCase();
     final existingUser = await getUserByEmail(normalizedEmail);
@@ -251,7 +291,12 @@ class DatabaseHelper {
     final db = await database;
     await db.update(
       'users',
-      {'name': name, 'email': normalizedEmail, 'password': password},
+      {
+        'name': name,
+        'email': normalizedEmail,
+        'password': password,
+        'photoPath': photoPath,
+      },
       where: 'id = ?',
       whereArgs: [userId],
     );
@@ -266,21 +311,33 @@ class DatabaseHelper {
 
   Future<int> insertCar(Car car) async {
     final db = await database;
-    return await db.insert('cars', car.toMap());
+    final userId = _currentUserId ?? car.userId;
+    final data = car.toMap()..['userId'] = userId;
+    return await db.insert('cars', data);
   }
 
-  Future<List<Car>> getCars() async {
+  Future<List<Car>> getCars({int? userId}) async {
     final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query('cars');
+    final currentUserId = userId ?? _currentUserId;
+    if (currentUserId == null) {
+      return [];
+    }
+
+    final List<Map<String, dynamic>> maps = await db.query(
+      'cars',
+      where: 'userId = ?',
+      whereArgs: [currentUserId],
+    );
     return List.generate(maps.length, (i) => Car.fromMap(maps[i]));
   }
 
-  Future<Car?> getCarById(int id) async {
+  Future<Car?> getCarById(int id, {int? userId}) async {
     final db = await database;
+    final currentUserId = userId ?? _currentUserId;
     final List<Map<String, dynamic>> maps = await db.query(
       'cars',
-      where: 'id = ?',
-      whereArgs: [id],
+      where: currentUserId == null ? 'id = ?' : 'id = ? AND userId = ?',
+      whereArgs: currentUserId == null ? [id] : [id, currentUserId],
     );
     if (maps.isEmpty) return null;
     return Car.fromMap(maps.first);
@@ -288,12 +345,11 @@ class DatabaseHelper {
 
   Future<int> updateCar(Car car) async {
     final db = await database;
-    return await db.update(
-      'cars',
-      car.toMap(),
-      where: 'id = ?',
-      whereArgs: [car.id],
-    );
+    final data = car.toMap();
+    if (data['userId'] == null && _currentUserId != null) {
+      data['userId'] = _currentUserId;
+    }
+    return await db.update('cars', data, where: 'id = ?', whereArgs: [car.id]);
   }
 
   Future<Car> syncCarMetrics(int carId, {DateTime? referenceDate}) async {
@@ -323,7 +379,14 @@ class DatabaseHelper {
 
   Future<int> deleteCar(int id) async {
     final db = await database;
-    return await db.delete('cars', where: 'id = ?', whereArgs: [id]);
+    if (_currentUserId == null) {
+      return 0;
+    }
+    return await db.delete(
+      'cars',
+      where: 'id = ? AND userId = ?',
+      whereArgs: [id, _currentUserId],
+    );
   }
 
   Future<int> insertGasto(Gasto gasto) async {
