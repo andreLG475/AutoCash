@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'models/gasto.dart';
+import 'services/expense_logic.dart';
 import 'widgets/image_display_widget.dart';
 
 class VisualizacaoGastoPage extends StatefulWidget {
@@ -123,7 +124,7 @@ class _VisualizacaoGastoPageState extends State<VisualizacaoGastoPage> {
                     // 3. Data da Manutenção
                     _buildDisplayField(
                       label: 'Data:',
-                      value: _gasto?.data ?? '',
+                      value: formatDateFromStorage(_gasto?.data),
                     ),
                     const SizedBox(height: 16),
 

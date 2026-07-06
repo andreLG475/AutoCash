@@ -28,19 +28,32 @@ String? validateMileageAgainstChronology({
     }
 
     if (gastoDate.isBefore(selectedDate) && mileage < gasto.quilometragem) {
-      return 'A quilometragem deve ser igual ou maior que ${gasto.quilometragem} para datas anteriores a ${_formatDate(gastoDate)}';
+      return 'A quilometragem deve ser igual ou maior que ${gasto.quilometragem} para datas anteriores a ${formatDateForDisplay(gastoDate)}';
     }
 
     if (gastoDate.isAfter(selectedDate) && mileage > gasto.quilometragem) {
-      return 'A quilometragem deve ser igual ou menor que ${gasto.quilometragem} para datas posteriores a ${_formatDate(gastoDate)}';
+      return 'A quilometragem deve ser igual ou menor que ${gasto.quilometragem} para datas posteriores a ${formatDateForDisplay(gastoDate)}';
     }
   }
 
   return null;
 }
 
-String _formatDate(DateTime date) {
+String formatDateForDisplay(DateTime date) {
   return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+}
+
+String formatDateFromStorage(String? value) {
+  if (value == null || value.isEmpty) {
+    return '';
+  }
+
+  final parsedDate = DateTime.tryParse(value);
+  if (parsedDate == null) {
+    return value;
+  }
+
+  return formatDateForDisplay(parsedDate);
 }
 
 double calculateCostPerKm({
