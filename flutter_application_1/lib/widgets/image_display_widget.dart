@@ -1,6 +1,6 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:universal_io/io.dart';
 
 /// Widget para exibir fotos de arquivo local, URL ou ícone padrão
 class ImageDisplay extends StatelessWidget {
@@ -37,7 +37,21 @@ class ImageDisplay extends StatelessWidget {
       );
     }
 
-    // É arquivo local
+    if (imagePath!.startsWith('data:image')) {
+      final uri = Uri.parse(imagePath!);
+      final bytes = uri.data?.contentAsBytes();
+      if (bytes == null) {
+        return _buildPlaceholder();
+      }
+      return Image.memory(
+        bytes,
+        height: height,
+        width: width,
+        fit: fit,
+        errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+      );
+    }
+
     final file = File(imagePath!);
     if (!file.existsSync()) {
       return _buildPlaceholder();
@@ -152,6 +166,23 @@ class _FileDisplayState extends State<FileDisplay> {
   Widget build(BuildContext context) {
     if (widget.filePath == null || widget.filePath!.isEmpty) {
       return _buildEmpty();
+    }
+
+    if (widget.filePath!.startsWith('data:image')) {
+      final uri = Uri.parse(widget.filePath!);
+      final bytes = uri.data?.contentAsBytes();
+      if (bytes == null) {
+        return _buildEmpty();
+      }
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.memory(
+          bytes,
+          height: widget.height,
+          width: widget.width,
+          fit: BoxFit.cover,
+        ),
+      );
     }
 
     final file = File(widget.filePath!);

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'dart:io';
+import 'package:universal_io/io.dart';
 
 import 'data/database_helper.dart';
 import 'models/car.dart';
@@ -21,6 +21,7 @@ class _CadastroVeiculosPageState extends State<CadastroVeiculosPage> {
   final _kmController = TextEditingController();
   File? _carPhotoFile;
   String? _carPhotoPath;
+  Uint8List? _carPhotoBytes;
 
   @override
   void dispose() {
@@ -70,6 +71,7 @@ class _CadastroVeiculosPageState extends State<CadastroVeiculosPage> {
                     setState(() {
                       _carPhotoFile = null;
                       _carPhotoPath = null;
+                      _carPhotoBytes = null;
                     });
                   },
                 ),
@@ -81,31 +83,40 @@ class _CadastroVeiculosPageState extends State<CadastroVeiculosPage> {
   }
 
   Future<void> _takePhoto() async {
-    final file = await MediaService.takePhotoFromCamera();
-    if (file != null) {
-      final savedPath = await MediaService.persistFile(file, subFolder: 'cars');
-      if (savedPath != null) {
-        setState(() {
-          _carPhotoFile = File(savedPath);
-          _carPhotoPath = savedPath;
-        });
-        _showSuccessMessage('Foto capturada com sucesso!');
-      }
+    final savedPath = await MediaService.takePhotoFromCamera();
+    if (savedPath != null) {
+      setState(() {
+        _carPhotoPath = savedPath;
+        _carPhotoBytes = _decodePhotoBytes(savedPath);
+        _carPhotoFile = savedPath.startsWith('data:image')
+            ? null
+            : File(savedPath);
+      });
+      _showSuccessMessage('Foto capturada com sucesso!');
     }
   }
 
   Future<void> _pickPhoto() async {
-    final file = await MediaService.pickPhotoFromGallery();
-    if (file != null) {
-      final savedPath = await MediaService.persistFile(file, subFolder: 'cars');
-      if (savedPath != null) {
-        setState(() {
-          _carPhotoFile = File(savedPath);
-          _carPhotoPath = savedPath;
-        });
-        _showSuccessMessage('Foto selecionada com sucesso!');
-      }
+    final savedPath = await MediaService.pickPhotoFromGallery();
+    if (savedPath != null) {
+      setState(() {
+        _carPhotoPath = savedPath;
+        _carPhotoBytes = _decodePhotoBytes(savedPath);
+        _carPhotoFile = savedPath.startsWith('data:image')
+            ? null
+            : File(savedPath);
+      });
+      _showSuccessMessage('Foto selecionada com sucesso!');
     }
+  }
+
+  Uint8List? _decodePhotoBytes(String? imagePath) {
+    if (imagePath == null || !imagePath.startsWith('data:image')) {
+      return null;
+    }
+
+    final uri = Uri.parse(imagePath);
+    return uri.data?.contentAsBytes();
   }
 
   void _showSuccessMessage(String message) {
@@ -286,18 +297,25 @@ class _CadastroVeiculosPageState extends State<CadastroVeiculosPage> {
                                 borderRadius: BorderRadius.circular(14),
                                 onTap: _handlePhotoUpload,
                                 child: SizedBox(
-                                  height: _carPhotoFile != null ? 200 : 180,
-                                  child: _carPhotoFile != null
+                                  height: _carPhotoPath != null ? 200 : 180,
+                                  child: _carPhotoPath != null
                                       ? Stack(
                                           fit: StackFit.expand,
                                           children: [
                                             ClipRRect(
                                               borderRadius:
                                                   BorderRadius.circular(14),
-                                              child: Image.file(
-                                                _carPhotoFile!,
-                                                fit: BoxFit.cover,
-                                              ),
+                                              child: _carPhotoBytes != null
+                                                  ? Image.memory(
+                                                      _carPhotoBytes!,
+                                                      fit: BoxFit.cover,
+                                                    )
+                                                  : _carPhotoFile != null
+                                                  ? Image.file(
+                                                      _carPhotoFile!,
+                                                      fit: BoxFit.cover,
+                                                    )
+                                                  : const SizedBox(),
                                             ),
                                             Container(
                                               decoration: BoxDecoration(

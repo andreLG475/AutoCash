@@ -45,7 +45,8 @@ class _LoginPageState extends State<LoginPage> {
         return;
       }
 
-      DatabaseHelper.instance.setCurrentUserId(user.id);
+      await DatabaseHelper.instance.setCurrentUserId(user.id);
+      if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
       if (!mounted) return;

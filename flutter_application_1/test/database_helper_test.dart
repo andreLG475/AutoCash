@@ -1,6 +1,7 @@
 import 'package:flutter_application_1/data/database_helper.dart';
 import 'package:flutter_application_1/models/car.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 void main() {
@@ -10,7 +11,22 @@ void main() {
   });
 
   setUp(() async {
+    SharedPreferences.setMockInitialValues({});
     await DatabaseHelper.instance.resetDatabase();
+  });
+
+  test('persiste o usuário atual entre execuções', () async {
+    await DatabaseHelper.instance.setCurrentUserId(42);
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getInt('autocash_current_user_id'), 42);
+  });
+
+  test('restaura o usuário atual ao reinicializar a sessão', () async {
+    await DatabaseHelper.instance.setCurrentUserId(77);
+    await DatabaseHelper.instance.initialize();
+
+    expect(DatabaseHelper.instance.currentUserId, 77);
   });
 
   test('cadastra, autentica e atualiza usuário no banco', () async {
@@ -61,7 +77,7 @@ void main() {
       password: '123456',
     );
 
-    DatabaseHelper.instance.setCurrentUserId(primeiraConta.id);
+    await DatabaseHelper.instance.setCurrentUserId(primeiraConta.id);
     await DatabaseHelper.instance.insertCar(
       Car(
         marca: 'Chevrolet',
@@ -74,7 +90,7 @@ void main() {
       ),
     );
 
-    DatabaseHelper.instance.setCurrentUserId(segundaConta.id);
+    await DatabaseHelper.instance.setCurrentUserId(segundaConta.id);
     final carrosDaConta2 = await DatabaseHelper.instance.getCars();
 
     expect(carrosDaConta2, isEmpty);

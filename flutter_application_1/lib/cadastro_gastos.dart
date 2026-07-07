@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'dart:io';
+import 'package:universal_io/io.dart';
 
 import 'data/database_helper.dart';
 import 'models/gasto.dart';
@@ -28,7 +28,6 @@ class _CadastroGastosPageState extends State<CadastroGastosPage> {
 
   Car? _car;
   DateTime? _selectedDate;
-  File? _notaFiscalFile;
   String? _notaFiscalPath;
 
   @override
@@ -113,14 +112,13 @@ class _CadastroGastosPageState extends State<CadastroGastosPage> {
                   _pickFile();
                 },
               ),
-              if (_notaFiscalFile != null)
+              if (_notaFiscalPath != null && _notaFiscalPath!.isNotEmpty)
                 ListTile(
                   leading: const Icon(Icons.close, color: Colors.red),
                   title: const Text('Remover Arquivo'),
                   onTap: () {
                     Navigator.pop(context);
                     setState(() {
-                      _notaFiscalFile = null;
                       _notaFiscalPath = null;
                     });
                   },
@@ -133,53 +131,32 @@ class _CadastroGastosPageState extends State<CadastroGastosPage> {
   }
 
   Future<void> _takePhoto() async {
-    final file = await MediaService.takePhotoFromCamera();
-    if (file != null) {
-      final savedPath = await MediaService.persistFile(
-        file,
-        subFolder: 'gastos',
-      );
-      if (savedPath != null) {
-        setState(() {
-          _notaFiscalFile = File(savedPath);
-          _notaFiscalPath = savedPath;
-        });
-        _showSuccessMessage('Foto capturada com sucesso!');
-      }
+    final savedPath = await MediaService.takePhotoFromCamera();
+    if (savedPath != null) {
+      setState(() {
+        _notaFiscalPath = savedPath;
+      });
+      _showSuccessMessage('Foto capturada com sucesso!');
     }
   }
 
   Future<void> _pickPhoto() async {
-    final file = await MediaService.pickPhotoFromGallery();
-    if (file != null) {
-      final savedPath = await MediaService.persistFile(
-        file,
-        subFolder: 'gastos',
-      );
-      if (savedPath != null) {
-        setState(() {
-          _notaFiscalFile = File(savedPath);
-          _notaFiscalPath = savedPath;
-        });
-        _showSuccessMessage('Foto selecionada com sucesso!');
-      }
+    final savedPath = await MediaService.pickPhotoFromGallery();
+    if (savedPath != null) {
+      setState(() {
+        _notaFiscalPath = savedPath;
+      });
+      _showSuccessMessage('Foto selecionada com sucesso!');
     }
   }
 
   Future<void> _pickFile() async {
-    final file = await MediaService.pickFile();
-    if (file != null) {
-      final savedPath = await MediaService.persistFile(
-        file,
-        subFolder: 'gastos',
-      );
-      if (savedPath != null) {
-        setState(() {
-          _notaFiscalFile = File(savedPath);
-          _notaFiscalPath = savedPath;
-        });
-        _showSuccessMessage('Arquivo importado com sucesso!');
-      }
+    final savedPath = await MediaService.pickFile();
+    if (savedPath != null) {
+      setState(() {
+        _notaFiscalPath = savedPath;
+      });
+      _showSuccessMessage('Arquivo importado com sucesso!');
     }
   }
 
@@ -511,7 +488,8 @@ class _CadastroGastosPageState extends State<CadastroGastosPage> {
                               ),
                             ),
                             const SizedBox(height: 8),
-                            if (_notaFiscalFile == null)
+                            if (_notaFiscalPath == null ||
+                                _notaFiscalPath!.isEmpty)
                               Card(
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
@@ -589,9 +567,11 @@ class _CadastroGastosPageState extends State<CadastroGastosPage> {
                                         ),
                                         const SizedBox(height: 4),
                                         SelectableText(
-                                          MediaService.getFileName(
-                                            _notaFiscalFile!,
-                                          ),
+                                          _notaFiscalPath!.startsWith('data:')
+                                              ? 'Arquivo anexado'
+                                              : _notaFiscalPath!
+                                                    .split('/')
+                                                    .last,
                                           style: const TextStyle(
                                             fontSize: 12,
                                             color: Colors.black87,
@@ -604,7 +584,11 @@ class _CadastroGastosPageState extends State<CadastroGastosPage> {
                                               MainAxisAlignment.spaceBetween,
                                           children: [
                                             Text(
-                                              'Tamanho: ${MediaService.getFileSizeInMB(_notaFiscalFile!).toStringAsFixed(2)} MB',
+                                              _notaFiscalPath!.startsWith(
+                                                    'data:',
+                                                  )
+                                                  ? 'Tamanho: anexado via navegador'
+                                                  : 'Tamanho: ${MediaService.getFileSizeInMB(File(_notaFiscalPath!)).toStringAsFixed(2)} MB',
                                               style: const TextStyle(
                                                 fontSize: 10,
                                                 color: Colors.grey,
@@ -613,7 +597,6 @@ class _CadastroGastosPageState extends State<CadastroGastosPage> {
                                             GestureDetector(
                                               onTap: () {
                                                 setState(() {
-                                                  _notaFiscalFile = null;
                                                   _notaFiscalPath = null;
                                                 });
                                               },

@@ -14,7 +14,9 @@ import 'models/gasto.dart';
 import 'widgets/image_display_widget.dart';
 import 'widgets/profile_avatar.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await DatabaseHelper.instance.initialize();
   runApp(const MyApp());
 }
 
@@ -23,6 +25,8 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasActiveSession = DatabaseHelper.instance.currentUserId != null;
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'AutoCash',
@@ -30,7 +34,7 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.red,
         scaffoldBackgroundColor: Colors.grey[200],
       ),
-      home: const LoginPage(),
+      home: hasActiveSession ? const MainScreen() : const LoginPage(),
       routes: {
         '/login': (context) => const LoginPage(),
         '/register': (context) => const RegisterPage(),
@@ -158,13 +162,13 @@ class _MainScreenState extends State<MainScreen> {
 
         leading: IconButton(
           icon: const Icon(Icons.exit_to_app, color: Colors.white),
-          onPressed: () {
-            DatabaseHelper.instance.setCurrentUserId(null);
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              '/login',
-              (route) => false,
-            );
+          onPressed: () async {
+            await DatabaseHelper.instance.setCurrentUserId(null);
+            if (!mounted) return;
+            if (!context.mounted) return;
+
+            final navigator = Navigator.of(context);
+            navigator.pushNamedAndRemoveUntil('/login', (route) => false);
           },
         ),
         actions: [

@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 
 import 'data/database_helper.dart';
@@ -120,10 +118,13 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
     return nomes[mes - 1];
   }
 
-  Future<void> _updateCarImageFromFile(File file) async {
+  Future<void> _updateCarImageFromMedia(String mediaPath) async {
     if (!mounted) return;
 
-    final savedPath = await MediaService.persistFile(file, subFolder: 'cars');
+    final savedPath = await MediaService.persistMediaFile(
+      mediaPath,
+      subFolder: 'cars',
+    );
     if (savedPath == null) return;
 
     final updatedCar = (_currentCar ?? widget.car).copy(image: savedPath);
@@ -153,9 +154,9 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
               onTap: () async {
                 if (!mounted) return;
                 Navigator.pop(sheetContext);
-                final file = await MediaService.takePhotoFromCamera();
-                if (file != null) {
-                  await _updateCarImageFromFile(file);
+                final mediaPath = await MediaService.takePhotoFromCamera();
+                if (mediaPath != null) {
+                  await _updateCarImageFromMedia(mediaPath);
                 }
               },
             ),
@@ -165,9 +166,9 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
               onTap: () async {
                 if (!mounted) return;
                 Navigator.pop(sheetContext);
-                final file = await MediaService.pickPhotoFromGallery();
-                if (file != null) {
-                  await _updateCarImageFromFile(file);
+                final mediaPath = await MediaService.pickPhotoFromGallery();
+                if (mediaPath != null) {
+                  await _updateCarImageFromMedia(mediaPath);
                 }
               },
             ),

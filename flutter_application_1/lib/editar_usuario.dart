@@ -1,10 +1,9 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 
 import 'data/database_helper.dart';
 import 'models/user.dart';
 import 'services/media_service.dart';
+import 'widgets/image_display_widget.dart';
 
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
@@ -99,19 +98,13 @@ class _AccountPageState extends State<AccountPage> {
                 title: const Text('Tirar foto'),
                 onTap: () async {
                   Navigator.pop(context);
-                  final file = await MediaService.takePhotoFromCamera();
-                  if (file != null) {
-                    final savedPath = await MediaService.persistFile(
-                      file,
-                      subFolder: 'avatars',
+                  final savedPath = await MediaService.takePhotoFromCamera();
+                  if (savedPath != null) {
+                    setState(() => _avatarPath = savedPath);
+                    _showMessage(
+                      'Foto atualizada com sucesso!',
+                      isSuccess: true,
                     );
-                    if (savedPath != null) {
-                      setState(() => _avatarPath = savedPath);
-                      _showMessage(
-                        'Foto atualizada com sucesso!',
-                        isSuccess: true,
-                      );
-                    }
                   }
                 },
               ),
@@ -123,19 +116,13 @@ class _AccountPageState extends State<AccountPage> {
                 title: const Text('Escolher da galeria'),
                 onTap: () async {
                   Navigator.pop(context);
-                  final file = await MediaService.pickPhotoFromGallery();
-                  if (file != null) {
-                    final savedPath = await MediaService.persistFile(
-                      file,
-                      subFolder: 'avatars',
+                  final savedPath = await MediaService.pickPhotoFromGallery();
+                  if (savedPath != null) {
+                    setState(() => _avatarPath = savedPath);
+                    _showMessage(
+                      'Foto atualizada com sucesso!',
+                      isSuccess: true,
                     );
-                    if (savedPath != null) {
-                      setState(() => _avatarPath = savedPath);
-                      _showMessage(
-                        'Foto atualizada com sucesso!',
-                        isSuccess: true,
-                      );
-                    }
                   }
                 },
               ),
@@ -214,17 +201,12 @@ class _AccountPageState extends State<AccountPage> {
                       children: [
                         if (_avatarPath != null && _avatarPath!.isNotEmpty)
                           ClipOval(
-                            child: Image.file(
-                              File(_avatarPath!),
+                            child: ImageDisplay(
+                              imagePath: _avatarPath,
                               width: 140,
                               height: 140,
                               fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  const Icon(
-                                    Icons.account_circle,
-                                    size: 140,
-                                    color: Colors.black,
-                                  ),
+                              defaultIcon: Icons.account_circle,
                             ),
                           )
                         else

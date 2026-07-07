@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import '../models/car.dart';
 import '../models/gasto.dart';
 import '../models/user.dart';
@@ -12,14 +15,47 @@ class DatabaseHelper {
   static Database? _database;
   static int? _currentUserId;
 
+  static const String _usersKey = 'autocash_users';
+  static const String _carsKey = 'autocash_cars';
+  static const String _gastosKey = 'autocash_gastos';
+  static const String _currentUserKey = 'autocash_current_user_id';
+
   final List<User> _webUsers = [];
+  final List<Car> _webCars = [];
+  final List<Gasto> _webGastos = [];
 
   DatabaseHelper._();
 
   int? get currentUserId => _currentUserId;
 
-  void setCurrentUserId(int? userId) {
+  Future<void> initialize() async {
+    final prefs = await SharedPreferences.getInstance();
+    _currentUserId = prefs.getInt(_currentUserKey);
+
+    if (kIsWeb) {
+      final users = await _loadPersistedUsers();
+      final cars = await _loadPersistedCars();
+      final gastos = await _loadPersistedGastos();
+      _webUsers
+        ..clear()
+        ..addAll(users);
+      _webCars
+        ..clear()
+        ..addAll(cars);
+      _webGastos
+        ..clear()
+        ..addAll(gastos);
+    }
+  }
+
+  Future<void> setCurrentUserId(int? userId) async {
     _currentUserId = userId;
+    final prefs = await SharedPreferences.getInstance();
+    if (userId == null) {
+      await prefs.remove(_currentUserKey);
+      return;
+    }
+    await prefs.setInt(_currentUserKey, userId);
   }
 
   Future<Database> get database async {
@@ -61,6 +97,19 @@ class DatabaseHelper {
   }
 
   Future<void> resetDatabase() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (kIsWeb) {
+      _webUsers.clear();
+      _webCars.clear();
+      _webGastos.clear();
+      _currentUserId = null;
+      await prefs.remove(_usersKey);
+      await prefs.remove(_carsKey);
+      await prefs.remove(_gastosKey);
+      await prefs.remove(_currentUserKey);
+      return;
+    }
+
     final db = _database;
     if (db != null) {
       await db.close();
@@ -69,6 +118,10 @@ class DatabaseHelper {
 
     final dbPath = join(await getDatabasesPath(), 'autocash.db');
     await deleteDatabase(dbPath);
+    await prefs.remove(_usersKey);
+    await prefs.remove(_carsKey);
+    await prefs.remove(_gastosKey);
+    await prefs.remove(_currentUserKey);
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -158,6 +211,63 @@ class DatabaseHelper {
     }
   }
 
+  Future<List<User>> _loadPersistedUsers() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_usersKey);
+    if (raw == null || raw.isEmpty) {
+      return [];
+    }
+
+    final decoded = jsonDecode(raw) as List<dynamic>;
+    return decoded
+        .map((item) => User.fromMap(Map<String, dynamic>.from(item)))
+        .toList();
+  }
+
+  Future<void> _savePersistedUsers(List<User> users) async {
+    final prefs = await SharedPreferences.getInstance();
+    final payload = users.map((user) => user.toMap()).toList();
+    await prefs.setString(_usersKey, jsonEncode(payload));
+  }
+
+  Future<List<Car>> _loadPersistedCars() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_carsKey);
+    if (raw == null || raw.isEmpty) {
+      return [];
+    }
+
+    final decoded = jsonDecode(raw) as List<dynamic>;
+    return decoded
+        .map((item) => Car.fromMap(Map<String, dynamic>.from(item)))
+        .toList();
+  }
+
+  Future<void> _savePersistedCars(List<Car> cars) async {
+    final prefs = await SharedPreferences.getInstance();
+    final payload = cars.map((car) => car.toMap()).toList();
+    await prefs.setString(_carsKey, jsonEncode(payload));
+  }
+
+  Future<List<Gasto>> _loadPersistedGastos() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_gastosKey);
+    if (raw == null || raw.isEmpty) {
+      return [];
+    }
+
+    final decoded = jsonDecode(raw) as List<dynamic>;
+    return decoded
+        .map((item) => Gasto.fromMap(Map<String, dynamic>.from(item)))
+        .toList();
+  }
+
+  Future<void> _savePersistedGastos(List<Gasto> gastos) async {
+    final prefs = await SharedPreferences.getInstance();
+    final payload = gastos.map((gasto) => gasto.toMap()).toList();
+    await prefs.setString(_gastosKey, jsonEncode(payload));
+  }
+
   Future<User> registerUser({
     required String name,
     required String email,
@@ -171,16 +281,19 @@ class DatabaseHelper {
     }
 
     if (kIsWeb) {
+      final users = await _loadPersistedUsers();
+      final nextId = users.isEmpty
+          ? 1
+          : users.map((user) => user.id ?? 0).reduce((a, b) => a > b ? a : b) +
+                1;
       final user = User(
-        id: _webUsers.isEmpty
-            ? 1
-            : _webUsers.map((u) => u.id ?? 0).reduce((a, b) => a > b ? a : b) +
-                  1,
+        id: nextId,
         name: name,
         email: normalizedEmail,
         password: password,
       );
-      _webUsers.add(user);
+      users.add(user);
+      await _savePersistedUsers(users);
       return user;
     }
 
@@ -201,7 +314,8 @@ class DatabaseHelper {
   }) async {
     final normalizedIdentifier = identifier.trim().toLowerCase();
     if (kIsWeb) {
-      final filtered = _webUsers.where(
+      final users = await _loadPersistedUsers();
+      final filtered = users.where(
         (user) =>
             (user.email == normalizedIdentifier ||
                 user.name.toLowerCase() == normalizedIdentifier) &&
@@ -227,7 +341,8 @@ class DatabaseHelper {
   Future<User?> getUserByEmail(String email) async {
     final normalizedEmail = email.trim().toLowerCase();
     if (kIsWeb) {
-      final filtered = _webUsers.where((user) => user.email == normalizedEmail);
+      final users = await _loadPersistedUsers();
+      final filtered = users.where((user) => user.email == normalizedEmail);
       return filtered.isEmpty ? null : filtered.first;
     }
 
@@ -247,7 +362,8 @@ class DatabaseHelper {
 
   Future<User?> getUserById(int id) async {
     if (kIsWeb) {
-      final filtered = _webUsers.where((user) => user.id == id);
+      final users = await _loadPersistedUsers();
+      final filtered = users.where((user) => user.id == id);
       return filtered.isEmpty ? null : filtered.first;
     }
 
@@ -274,17 +390,20 @@ class DatabaseHelper {
     }
 
     if (kIsWeb) {
-      final index = _webUsers.indexWhere((user) => user.id == userId);
+      final users = await _loadPersistedUsers();
+      final index = users.indexWhere((user) => user.id == userId);
       if (index < 0) {
         throw Exception('Usuário não encontrado para atualização.');
       }
 
-      final updatedUser = _webUsers[index].copy(
+      final updatedUser = users[index].copy(
         name: name,
         email: normalizedEmail,
         password: password,
+        photoPath: photoPath,
       );
-      _webUsers[index] = updatedUser;
+      users[index] = updatedUser;
+      await _savePersistedUsers(users);
       return updatedUser;
     }
 
@@ -310,6 +429,21 @@ class DatabaseHelper {
   }
 
   Future<int> insertCar(Car car) async {
+    if (kIsWeb) {
+      final cars = await _loadPersistedCars();
+      final userId = _currentUserId ?? car.userId;
+      final nextId = cars.isEmpty
+          ? 1
+          : cars
+                    .map((existingCar) => existingCar.id ?? 0)
+                    .reduce((a, b) => a > b ? a : b) +
+                1;
+      final newCar = car.copy(id: nextId, userId: userId);
+      cars.add(newCar);
+      await _savePersistedCars(cars);
+      return nextId;
+    }
+
     final db = await database;
     final userId = _currentUserId ?? car.userId;
     final data = car.toMap()..['userId'] = userId;
@@ -317,6 +451,15 @@ class DatabaseHelper {
   }
 
   Future<List<Car>> getCars({int? userId}) async {
+    if (kIsWeb) {
+      final cars = await _loadPersistedCars();
+      final currentUserId = userId ?? _currentUserId;
+      if (currentUserId == null) {
+        return [];
+      }
+      return cars.where((car) => car.userId == currentUserId).toList();
+    }
+
     final db = await database;
     final currentUserId = userId ?? _currentUserId;
     if (currentUserId == null) {
@@ -332,6 +475,20 @@ class DatabaseHelper {
   }
 
   Future<Car?> getCarById(int id, {int? userId}) async {
+    if (kIsWeb) {
+      final cars = await _loadPersistedCars();
+      final currentUserId = userId ?? _currentUserId;
+      final matchingCars = cars.where((candidate) => candidate.id == id);
+      if (matchingCars.isEmpty) {
+        return null;
+      }
+      final car = matchingCars.first;
+      if (currentUserId != null && car.userId != currentUserId) {
+        return null;
+      }
+      return car;
+    }
+
     final db = await database;
     final currentUserId = userId ?? _currentUserId;
     final List<Map<String, dynamic>> maps = await db.query(
@@ -344,6 +501,20 @@ class DatabaseHelper {
   }
 
   Future<int> updateCar(Car car) async {
+    if (kIsWeb) {
+      final cars = await _loadPersistedCars();
+      final index = cars.indexWhere((candidate) => candidate.id == car.id);
+      if (index < 0) {
+        return 0;
+      }
+      final updatedCar = car.userId == null && _currentUserId != null
+          ? car.copy(userId: _currentUserId)
+          : car;
+      cars[index] = updatedCar;
+      await _savePersistedCars(cars);
+      return 1;
+    }
+
     final db = await database;
     final data = car.toMap();
     if (data['userId'] == null && _currentUserId != null) {
@@ -378,6 +549,17 @@ class DatabaseHelper {
   }
 
   Future<int> deleteCar(int id) async {
+    if (kIsWeb) {
+      if (_currentUserId == null) {
+        return 0;
+      }
+      final cars = await _loadPersistedCars();
+      final initialLength = cars.length;
+      cars.removeWhere((car) => car.id == id && car.userId == _currentUserId);
+      await _savePersistedCars(cars);
+      return initialLength == cars.length ? 0 : 1;
+    }
+
     final db = await database;
     if (_currentUserId == null) {
       return 0;
@@ -390,11 +572,29 @@ class DatabaseHelper {
   }
 
   Future<int> insertGasto(Gasto gasto) async {
+    if (kIsWeb) {
+      final gastos = await _loadPersistedGastos();
+      final nextId = gastos.isEmpty
+          ? 1
+          : gastos
+                    .map((existingGasto) => existingGasto.id ?? 0)
+                    .reduce((a, b) => a > b ? a : b) +
+                1;
+      gastos.add(gasto.copy(id: nextId));
+      await _savePersistedGastos(gastos);
+      return nextId;
+    }
+
     final db = await database;
     return await db.insert('gastos', gasto.toMap());
   }
 
   Future<List<Gasto>> getGastosByCarId(int carId) async {
+    if (kIsWeb) {
+      final gastos = await _loadPersistedGastos();
+      return gastos.where((gasto) => gasto.carId == carId).toList();
+    }
+
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query(
       'gastos',
@@ -406,6 +606,15 @@ class DatabaseHelper {
   }
 
   Future<Gasto?> getGastoById(int id) async {
+    if (kIsWeb) {
+      final gastos = await _loadPersistedGastos();
+      final matchingGastos = gastos.where((candidate) => candidate.id == id);
+      if (matchingGastos.isEmpty) {
+        return null;
+      }
+      return matchingGastos.first;
+    }
+
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query(
       'gastos',
@@ -417,6 +626,17 @@ class DatabaseHelper {
   }
 
   Future<int> updateGasto(Gasto gasto) async {
+    if (kIsWeb) {
+      final gastos = await _loadPersistedGastos();
+      final index = gastos.indexWhere((candidate) => candidate.id == gasto.id);
+      if (index < 0) {
+        return 0;
+      }
+      gastos[index] = gasto;
+      await _savePersistedGastos(gastos);
+      return 1;
+    }
+
     final db = await database;
     return await db.update(
       'gastos',
@@ -427,11 +647,27 @@ class DatabaseHelper {
   }
 
   Future<int> deleteGasto(int id) async {
+    if (kIsWeb) {
+      final gastos = await _loadPersistedGastos();
+      final initialLength = gastos.length;
+      gastos.removeWhere((gasto) => gasto.id == id);
+      await _savePersistedGastos(gastos);
+      return initialLength == gastos.length ? 0 : 1;
+    }
+
     final db = await database;
     return await db.delete('gastos', where: 'id = ?', whereArgs: [id]);
   }
 
   Future<double> getTotalGastosByCarId(int carId) async {
+    if (kIsWeb) {
+      final gastos = await _loadPersistedGastos();
+      final total = gastos
+          .where((gasto) => gasto.carId == carId)
+          .fold<double>(0, (sum, gasto) => sum + gasto.valor);
+      return total;
+    }
+
     final db = await database;
     final result = await db.rawQuery(
       'SELECT SUM(valor) as total FROM gastos WHERE carId = ?',
