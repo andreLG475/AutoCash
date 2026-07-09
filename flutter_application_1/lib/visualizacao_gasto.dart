@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'models/gasto.dart';
 import 'services/expense_logic.dart';
 import 'widgets/image_display_widget.dart';
+import 'utils/formatters.dart';
 
 class VisualizacaoGastoPage extends StatefulWidget {
   const VisualizacaoGastoPage({super.key});
@@ -43,10 +44,16 @@ class _VisualizacaoGastoPageState extends State<VisualizacaoGastoPage> {
         ),
         title: Row(
           mainAxisSize: MainAxisSize.min,
-          children: const [
+          children: [
             Hero(
               tag: 'app_brand_icon',
-              child: Icon(Icons.directions_car, color: Colors.white, size: 20),
+              child: Image.asset(
+                'assets/logo.png',
+                height: 20,
+                width: 20,
+                fit: BoxFit.contain,
+                color: Colors.white,
+              ),
             ),
             SizedBox(width: 8),
             Flexible(
@@ -116,7 +123,7 @@ class _VisualizacaoGastoPageState extends State<VisualizacaoGastoPage> {
                     _buildDisplayField(
                       label: 'Valor gasto:',
                       value: _gasto != null
-                          ? r'R$ ' + _gasto!.valor.toStringAsFixed(2)
+                          ? formatCurrency(_gasto!.valor)
                           : '',
                     ),
                     const SizedBox(height: 16),

@@ -71,7 +71,16 @@ class ImageDisplay extends StatelessWidget {
       height: height,
       width: width,
       color: Colors.grey[300],
-      child: Center(child: Icon(defaultIcon, size: 60, color: Colors.grey)),
+      child: Center(
+        child: Image.asset(
+          'assets/logo.png',
+          height: height * 0.5,
+          fit: BoxFit.contain,
+          color: Colors.grey,
+          errorBuilder: (context, error, stackTrace) =>
+              Icon(defaultIcon, size: 60, color: Colors.grey),
+        ),
+      ),
     );
   }
 }
@@ -441,10 +450,16 @@ class _FileViewerPageSimpleState extends State<_FileViewerPageSimple> {
         ),
         title: Row(
           mainAxisSize: MainAxisSize.min,
-          children: const [
+          children: [
             Hero(
               tag: 'app_brand_icon',
-              child: Icon(Icons.directions_car, color: Colors.white, size: 20),
+              child: Image.asset(
+                'assets/logo.png',
+                height: 20,
+                width: 20,
+                fit: BoxFit.contain,
+                color: Colors.white,
+              ),
             ),
             SizedBox(width: 8),
             Flexible(

@@ -31,7 +31,10 @@ class _RegisterPageState extends State<RegisterPage> {
     final password = _passwordController.text;
     final confirmPassword = _confirmPasswordController.text;
 
-    if (name.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
+    if (name.isEmpty ||
+        email.isEmpty ||
+        password.isEmpty ||
+        confirmPassword.isEmpty) {
       _showMessage('Preencha todos os campos.');
       return;
     }
@@ -79,7 +82,10 @@ class _RegisterPageState extends State<RegisterPage> {
   void _showMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message, style: const TextStyle(fontWeight: FontWeight.bold)),
+        content: Text(
+          message,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: Colors.redAccent[700],
       ),
     );
@@ -96,15 +102,21 @@ class _RegisterPageState extends State<RegisterPage> {
         centerTitle: true,
         title: Row(
           mainAxisSize: MainAxisSize.min,
-          children: const [
+          children: [
             Hero(
               tag: 'app_brand_icon',
-              child: Icon(Icons.directions_car, color: Colors.white, size: 20),
+              child: Image.asset(
+                'assets/logo.png',
+                height: 20,
+                width: 20,
+                fit: BoxFit.contain,
+                color: Colors.white,
+              ),
             ),
             SizedBox(width: 8),
             Flexible(
               child: Text(
-                'autocash',
+                'AutoCash',
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
