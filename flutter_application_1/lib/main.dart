@@ -13,6 +13,7 @@ import 'models/car.dart';
 import 'models/gasto.dart';
 import 'widgets/image_display_widget.dart';
 import 'widgets/profile_avatar.dart';
+import 'utils/formatters.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -141,15 +142,21 @@ class _MainScreenState extends State<MainScreen> {
         centerTitle: true,
         title: Row(
           mainAxisSize: MainAxisSize.min,
-          children: const [
+          children: [
             Hero(
               tag: 'app_brand_icon',
-              child: Icon(Icons.directions_car, color: Colors.white, size: 20),
+              child: Image.asset(
+                'assets/logo.png',
+                height: 20,
+                width: 20,
+                fit: BoxFit.contain,
+                color: Colors.white,
+              ),
             ),
             SizedBox(width: 8),
             Flexible(
               child: Text(
-                'autocash',
+                'AutoCash',
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -294,7 +301,7 @@ class _MainScreenState extends State<MainScreen> {
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          "GASTO MENSAL ATUAL: R\$ ${_calculateMonthlyExpense(carro.id!).toStringAsFixed(2)}",
+                                          "GASTO MENSAL ATUAL: ${formatCurrency(_calculateMonthlyExpense(carro.id!))}",
                                           style: const TextStyle(
                                             color: Colors.black,
                                             fontWeight: FontWeight.bold,
@@ -342,7 +349,7 @@ class _MainScreenState extends State<MainScreen> {
                                                             bottom: 4.0,
                                                           ),
                                                       child: Text(
-                                                        '${gasto.descricao}: R\$ ${gasto.valor.toStringAsFixed(2)}',
+                                                        '${gasto.descricao}: ${formatCurrency(gasto.valor)}',
                                                         style: const TextStyle(
                                                           color: Colors.black87,
                                                           fontSize: 12,

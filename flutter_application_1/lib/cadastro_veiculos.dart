@@ -5,6 +5,7 @@ import 'package:universal_io/io.dart';
 import 'data/database_helper.dart';
 import 'models/car.dart';
 import 'services/media_service.dart';
+import 'utils/formatters.dart';
 
 class CadastroVeiculosPage extends StatefulWidget {
   const CadastroVeiculosPage({super.key});
@@ -133,8 +134,8 @@ class _CadastroVeiculosPageState extends State<CadastroVeiculosPage> {
     if (!_formKey.currentState!.validate()) return;
 
     final carro = Car(
-      marca: _marcaController.text.trim(),
-      modelo: _modeloController.text.trim(),
+      marca: capitalizeFirst(_marcaController.text),
+      modelo: capitalizeFirst(_modeloController.text),
       ano: int.parse(_anoController.text.trim()),
       km: int.parse(_kmController.text.trim()),
       kmInicial: int.parse(_kmController.text.trim()),
@@ -169,10 +170,16 @@ class _CadastroVeiculosPageState extends State<CadastroVeiculosPage> {
         centerTitle: true,
         title: Row(
           mainAxisSize: MainAxisSize.min,
-          children: const [
+          children: [
             Hero(
               tag: 'app_brand_icon',
-              child: Icon(Icons.directions_car, color: Colors.white, size: 20),
+              child: Image.asset(
+                'assets/logo.png',
+                height: 20,
+                width: 20,
+                fit: BoxFit.contain,
+                color: Colors.white,
+              ),
             ),
             SizedBox(width: 8),
             Flexible(

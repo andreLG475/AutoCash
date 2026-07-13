@@ -6,6 +6,7 @@ import 'models/gasto.dart';
 import 'services/expense_logic.dart';
 import 'services/media_service.dart';
 import 'widgets/image_display_widget.dart';
+import 'utils/formatters.dart';
 
 class VisualizarVeiculoPage extends StatefulWidget {
   const VisualizarVeiculoPage({super.key, required this.car});
@@ -234,9 +235,15 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Hero(
+            Hero(
               tag: 'app_brand_icon',
-              child: Icon(Icons.directions_car, color: Colors.white, size: 20),
+              child: Image.asset(
+                'assets/logo.png',
+                height: 20,
+                width: 20,
+                fit: BoxFit.contain,
+                color: Colors.white,
+              ),
             ),
             const SizedBox(width: 8),
             Flexible(
@@ -443,7 +450,7 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
                                       CrossAxisAlignment.stretch,
                                   children: [
                                     Text(
-                                      "Gasto mensal deste mês: R\$ ${_monthlyTotal.toStringAsFixed(2)}",
+                                      "Gasto mensal deste mês: ${formatCurrency(_monthlyTotal)}",
                                       textAlign: TextAlign.center,
                                       style: const TextStyle(
                                         color: Colors.black,
@@ -453,7 +460,7 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
                                     ),
                                     const SizedBox(height: 6),
                                     Text(
-                                      "Gasto por KM: R\$ ${_costPerKm.toStringAsFixed(2)}",
+                                      "Gasto por KM: ${formatCurrency(_costPerKm)}",
                                       textAlign: TextAlign.center,
                                       style: const TextStyle(
                                         color: Colors.black,
@@ -529,7 +536,7 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
                                                     ),
                                                   ),
                                                   subtitle: Text(
-                                                    'Total: R\$ ${totalDoMes.toStringAsFixed(2)}',
+                                                    'Total: ${formatCurrency(totalDoMes)}',
                                                   ),
                                                   trailing:
                                                       _mesSelecionado == key
@@ -600,7 +607,7 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
                                                               horizontal: 16.0,
                                                             ),
                                                         child: Text(
-                                                          "${gasto.descricao}: R\$ ${gasto.valor.toStringAsFixed(2)}",
+                                                          "${gasto.descricao}: ${formatCurrency(gasto.valor)}",
                                                           style:
                                                               const TextStyle(
                                                                 color: Colors

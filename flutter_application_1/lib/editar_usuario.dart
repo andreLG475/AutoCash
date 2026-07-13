@@ -157,15 +157,21 @@ class _AccountPageState extends State<AccountPage> {
         // Título AUTOCASH adicionado
         title: Row(
           mainAxisSize: MainAxisSize.min,
-          children: const [
+          children: [
             Hero(
               tag: 'app_brand_icon',
-              child: Icon(Icons.directions_car, color: Colors.white, size: 20),
+              child: Image.asset(
+                'assets/logo.png',
+                height: 20,
+                width: 20,
+                fit: BoxFit.contain,
+                color: Colors.white,
+              ),
             ),
             SizedBox(width: 8),
             Flexible(
               child: Text(
-                'autocash',
+                'AutoCash',
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,

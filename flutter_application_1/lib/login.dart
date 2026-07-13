@@ -81,15 +81,21 @@ class _LoginPageState extends State<LoginPage> {
         centerTitle: true,
         title: Row(
           mainAxisSize: MainAxisSize.min,
-          children: const [
+          children: [
             Hero(
               tag: 'app_brand_icon',
-              child: Icon(Icons.directions_car, color: Colors.white, size: 20),
+              child: Image.asset(
+                'assets/logo.png',
+                height: 20,
+                width: 20,
+                fit: BoxFit.contain,
+                color: Colors.white,
+              ),
             ),
             SizedBox(width: 8),
             Flexible(
               child: Text(
-                'autocash',
+                'AutoCash',
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -113,9 +119,10 @@ class _LoginPageState extends State<LoginPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Icon(
-                    Icons.directions_car,
-                    size: 110,
+                  Image.asset(
+                    'assets/logo.png',
+                    height: 110,
+                    fit: BoxFit.contain,
                     color: Colors.redAccent[700],
                   ),
                   const SizedBox(height: 12),
