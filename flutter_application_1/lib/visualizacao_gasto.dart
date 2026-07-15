@@ -1,10 +1,16 @@
+// Importa pacote Material Design do Flutter
 import 'package:flutter/material.dart';
 
+// Importa modelo de dados de gasto/despesa
 import 'models/gasto.dart';
+// Importa funções de lógica de gastos
 import 'services/expense_logic.dart';
+// Importa widget para exibir imagens
 import 'widgets/image_display_widget.dart';
+// Importa funções de formatação
 import 'utils/formatters.dart';
 
+// Classe que exibe os detalhes de um gasto específico - é um StatefulWidget
 class VisualizacaoGastoPage extends StatefulWidget {
   const VisualizacaoGastoPage({super.key});
 
@@ -12,17 +18,24 @@ class VisualizacaoGastoPage extends StatefulWidget {
   State<VisualizacaoGastoPage> createState() => _VisualizacaoGastoPageState();
 }
 
+// Estado da página de visualização de gasto
 class _VisualizacaoGastoPageState extends State<VisualizacaoGastoPage> {
+  // Armazena o objeto de gasto sendo exibido
   Gasto? _gasto;
 
+  // Chamado quando as dependências mudam (por exemplo, quando o widget é criado)
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    // Carrega o gasto passado como argumento
     _loadGasto();
   }
 
+  // Método que carrega o gasto dos argumentos da navegação
   void _loadGasto() {
+    // Obtém os argumentos passados via navegação
     final args = ModalRoute.of(context)?.settings.arguments;
+    // Se o argumento é um objeto Gasto, atualiza o estado
     if (args is Gasto) {
       setState(() {
         _gasto = args;
@@ -30,18 +43,22 @@ class _VisualizacaoGastoPageState extends State<VisualizacaoGastoPage> {
     }
   }
 
+  // Constrói a interface
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      // Barra superior vermelha
       appBar: AppBar(
         backgroundColor: Colors.redAccent[700],
         elevation: 0,
         centerTitle: true,
+        // Botão de voltar
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
+        // Título com logo e texto
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -68,6 +85,7 @@ class _VisualizacaoGastoPageState extends State<VisualizacaoGastoPage> {
             ),
           ],
         ),
+        // Ações na barra (logout e perfil)
         actions: [
           IconButton(
             icon: const Icon(Icons.exit_to_app, color: Colors.white),
@@ -98,6 +116,7 @@ class _VisualizacaoGastoPageState extends State<VisualizacaoGastoPage> {
           ),
         ],
       ),
+      // Corpo da página com scroll
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -107,19 +126,20 @@ class _VisualizacaoGastoPageState extends State<VisualizacaoGastoPage> {
               child: Container(
                 padding: const EdgeInsets.all(16.0),
                 decoration: BoxDecoration(
-                  color: Colors.grey[200], // Fundo levemente contrastante
+                  color: Colors.grey[200],
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // Campo de descrição da manutenção
                     _buildDisplayField(
                       label: 'Manutenção:',
                       value: _gasto?.descricao ?? '',
                     ),
                     const SizedBox(height: 16),
 
-                    // 2. Valor Gasto
+                    // Campo de valor gasto formatado em moeda
                     _buildDisplayField(
                       label: 'Valor gasto:',
                       value: _gasto != null
@@ -128,27 +148,28 @@ class _VisualizacaoGastoPageState extends State<VisualizacaoGastoPage> {
                     ),
                     const SizedBox(height: 16),
 
-                    // 3. Data da Manutenção
+                    // Campo de data da manutenção formatado
                     _buildDisplayField(
                       label: 'Data:',
                       value: formatDateFromStorage(_gasto?.data),
                     ),
                     const SizedBox(height: 16),
 
-                    // 4. Quilometragem do Veículo
+                    // Campo de quilometragem do veículo
                     _buildDisplayField(
                       label: 'Kilomentragem do veiculo:',
                       value: _gasto?.quilometragem.toString() ?? '',
                     ),
                     const SizedBox(height: 16),
 
-                    // 5. Descrição Detalhada
+                    // Campo de descrição detalhada (opcional)
                     _buildDisplayField(
                       label: 'Descrição:',
                       value: _gasto?.descricaoDetalhada ?? '',
                     ),
                     const SizedBox(height: 16),
 
+                    // Seção de nota fiscal
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -162,6 +183,7 @@ class _VisualizacaoGastoPageState extends State<VisualizacaoGastoPage> {
                           ),
                         ),
                         const SizedBox(height: 8),
+                        // Widget que exibe imagem ou arquivo PDF
                         FileDisplay(filePath: _gasto?.notaFiscal, height: 180),
                       ],
                     ),
@@ -175,11 +197,12 @@ class _VisualizacaoGastoPageState extends State<VisualizacaoGastoPage> {
     );
   }
 
-  // Helper unificado para manter as caixas de exibição idênticas aos inputs do app
+  // Widget helper que constrói um campo de exibição (somente leitura)
   Widget _buildDisplayField({required String label, required String value}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Rótulo do campo
         Text(
           label,
           style: const TextStyle(
@@ -190,18 +213,17 @@ class _VisualizacaoGastoPageState extends State<VisualizacaoGastoPage> {
           ),
         ),
         const SizedBox(height: 8),
+        // Container com o texto do valor
         Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 16.0),
           decoration: BoxDecoration(
-            color: const Color(
-              0xFFF2F2F2,
-            ), // Mesmo cinza claro do restante do app
+            color: const Color(0xFFF2F2F2),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: Colors.black54,
               width: 1,
-            ), // Borda escura fina
+            ),
           ),
           child: Text(
             value,

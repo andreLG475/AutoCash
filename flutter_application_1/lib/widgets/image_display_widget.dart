@@ -1,15 +1,24 @@
+// Importa o pacote principal do Flutter
 import 'package:flutter/material.dart';
+// Importa o pacote para obter diretório de downloads
 import 'package:path_provider/path_provider.dart';
+// Importa o pacote universal_io para trabalhar com arquivos em diferentes plataformas
 import 'package:universal_io/io.dart';
 
 /// Widget para exibir fotos de arquivo local, URL ou ícone padrão
 class ImageDisplay extends StatelessWidget {
+  // Caminho da imagem (pode ser URL, arquivo local ou data URI)
   final String? imagePath;
+  // Altura da imagem
   final double height;
+  // Largura da imagem
   final double width;
+  // Como a imagem deve se ajustar ao espaço (cover, contain, etc)
   final BoxFit fit;
+  // Ícone padrão a mostrar quando não há imagem
   final IconData defaultIcon;
 
+  // Construtor com valores padrão
   const ImageDisplay({
     super.key,
     this.imagePath,
@@ -21,28 +30,34 @@ class ImageDisplay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Sem imagem ou imagem vazia
+    // Se não há caminho de imagem ou está vazio, mostra placeholder
     if (imagePath == null || imagePath!.isEmpty) {
       return _buildPlaceholder();
     }
 
-    // Verificar se é URL
+    // Verifica se é uma URL (http ou https)
     if (imagePath!.startsWith('http://') || imagePath!.startsWith('https://')) {
+      // Carrega a imagem da internet
       return Image.network(
         imagePath!,
         height: height,
         width: width,
         fit: fit,
+        // Se houver erro ao carregar, mostra placeholder
         errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
       );
     }
 
+    // Verifica se é uma imagem em formato data URI (base64)
     if (imagePath!.startsWith('data:image')) {
+      // Parse do data URI para extrair os bytes da imagem
       final uri = Uri.parse(imagePath!);
       final bytes = uri.data?.contentAsBytes();
+      // Se não conseguir extrair bytes, mostra placeholder
       if (bytes == null) {
         return _buildPlaceholder();
       }
+      // Carrega a imagem a partir dos bytes
       return Image.memory(
         bytes,
         height: height,
@@ -52,11 +67,14 @@ class ImageDisplay extends StatelessWidget {
       );
     }
 
+    // Trata como arquivo local
     final file = File(imagePath!);
+    // Verifica se o arquivo existe
     if (!file.existsSync()) {
       return _buildPlaceholder();
     }
 
+    // Carrega a imagem a partir do arquivo
     return Image.file(
       file,
       height: height,
@@ -66,6 +84,7 @@ class ImageDisplay extends StatelessWidget {
     );
   }
 
+  // Widget placeholder que mostra quando não há imagem válida
   Widget _buildPlaceholder() {
     return Container(
       height: height,
@@ -77,6 +96,7 @@ class ImageDisplay extends StatelessWidget {
           height: height * 0.5,
           fit: BoxFit.contain,
           color: Colors.grey,
+          // Se o logo também falhar, mostra o ícone padrão
           errorBuilder: (context, error, stackTrace) =>
               Icon(defaultIcon, size: 60, color: Colors.grey),
         ),
@@ -85,13 +105,18 @@ class ImageDisplay extends StatelessWidget {
   }
 }
 
-/// Widget para exibir PDF ou arquivo
+/// Widget para exibir PDF ou arquivo com opção de download
 class FileDisplay extends StatefulWidget {
+  // Caminho do arquivo a exibir
   final String? filePath;
+  // Altura do widget
   final double height;
+  // Largura do widget
   final double width;
+  // Se o widget deve ser clicável para download
   final bool isClickable;
 
+  // Construtor com valores padrão
   const FileDisplay({
     super.key,
     this.filePath,
@@ -104,21 +129,31 @@ class FileDisplay extends StatefulWidget {
   State<FileDisplay> createState() => _FileDisplayState();
 }
 
+// Estado do FileDisplay
 class _FileDisplayState extends State<FileDisplay> {
+  // Flag que indica se está em processo de download
   bool _isDownloading = false;
 
+  // Método que extrai o nome do arquivo a partir do caminho
   String _getFileNameWithExtension() {
+    // Se não há caminho, retorna string vazia
     if (widget.filePath == null || widget.filePath!.isEmpty) return '';
+    // Divide o caminho por "/" e pega o último elemento (nome do arquivo)
     final parts = widget.filePath!.split('/');
     return parts.last;
   }
 
+  // Método assíncrono que baixa o arquivo para a pasta Downloads
   Future<void> _downloadFile() async {
+    // Se não há caminho válido, retorna
     if (widget.filePath == null || widget.filePath!.isEmpty) return;
 
+    // Cria um File a partir do caminho
     final file = File(widget.filePath!);
+    // Verifica se o arquivo existe
     if (!file.existsSync()) {
       if (!mounted) return;
+      // Mostra erro se arquivo não encontrado
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Arquivo não encontrado'),
@@ -128,10 +163,13 @@ class _FileDisplayState extends State<FileDisplay> {
       return;
     }
 
+    // Atualiza o estado para mostrar que está baixando
     setState(() => _isDownloading = true);
 
     try {
+      // Obtém o diretório de Downloads do dispositivo
       final downloadsDirectory = await getDownloadsDirectory();
+      // Se não conseguir acessar Downloads, mostra erro
       if (downloadsDirectory == null) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -143,11 +181,14 @@ class _FileDisplayState extends State<FileDisplay> {
         return;
       }
 
+      // Cria o caminho de destino para o arquivo
       final destinationPath =
           '${downloadsDirectory.path}/${_getFileNameWithExtension()}';
+      // Copia o arquivo para a pasta Downloads
       await file.copy(destinationPath);
 
       if (!mounted) return;
+      // Mostra sucesso ao usuário
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -158,6 +199,7 @@ class _FileDisplayState extends State<FileDisplay> {
       );
     } catch (e) {
       if (!mounted) return;
+      // Mostra erro se falhar no download
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Erro ao baixar: $e'),
@@ -165,6 +207,7 @@ class _FileDisplayState extends State<FileDisplay> {
         ),
       );
     } finally {
+      // Finaliza o estado de download
       if (mounted) {
         setState(() => _isDownloading = false);
       }
@@ -173,10 +216,12 @@ class _FileDisplayState extends State<FileDisplay> {
 
   @override
   Widget build(BuildContext context) {
+    // Se não há caminho válido, mostra placeholder vazio
     if (widget.filePath == null || widget.filePath!.isEmpty) {
       return _buildEmpty();
     }
 
+    // Se é um data URI de imagem, exibe como imagem
     if (widget.filePath!.startsWith('data:image')) {
       final uri = Uri.parse(widget.filePath!);
       final bytes = uri.data?.contentAsBytes();
@@ -194,21 +239,29 @@ class _FileDisplayState extends State<FileDisplay> {
       );
     }
 
+    // Verifica se o arquivo existe
     final file = File(widget.filePath!);
     if (!file.existsSync()) {
       return _buildEmpty();
     }
 
+    // Obtém a extensão do arquivo
     final ext = widget.filePath!.split('.').last.toLowerCase();
+    // Verifica se é PDF
     final isPdf = ext == 'pdf';
+    // Verifica se é imagem
     final isImage = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].contains(ext);
+    // Obtém o nome do arquivo
     final fileName = _getFileNameWithExtension();
 
+    // Widget de conteúdo que será exibido
     Widget content;
 
+    // Se é imagem, exibe com opção de download
     if (isImage) {
       content = Stack(
         children: [
+          // Imagem do arquivo
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: Image.file(
@@ -219,6 +272,7 @@ class _FileDisplayState extends State<FileDisplay> {
               errorBuilder: (context, error, stackTrace) => _buildEmpty(),
             ),
           ),
+          // Overlay com botão de download na parte inferior
           Positioned(
             left: 0,
             right: 0,
@@ -251,7 +305,9 @@ class _FileDisplayState extends State<FileDisplay> {
           ),
         ],
       );
-    } else if (isPdf) {
+    } 
+    // Se é PDF, exibe ícone de PDF com informações
+    else if (isPdf) {
       content = Container(
         height: widget.height,
         width: widget.width,
@@ -298,7 +354,9 @@ class _FileDisplayState extends State<FileDisplay> {
           ],
         ),
       );
-    } else {
+    } 
+    // Para outros tipos de arquivo, exibe ícone de arquivo genérico
+    else {
       content = Container(
         height: widget.height,
         width: widget.width,
@@ -347,9 +405,12 @@ class _FileDisplayState extends State<FileDisplay> {
       );
     }
 
+    // Se é clicável, envolve em GestureDetector para detectar cliques
     if (widget.isClickable) {
       return GestureDetector(
+        // Ao clicar, executa download se não estiver já baixando
         onTap: _isDownloading ? null : _downloadFile,
+        // Muda o cursor do mouse para indicar que é clicável
         child: MouseRegion(cursor: SystemMouseCursors.click, child: content),
       );
     }
@@ -357,6 +418,7 @@ class _FileDisplayState extends State<FileDisplay> {
     return content;
   }
 
+  // Widget que mostra quando não há arquivo válido
   Widget _buildEmpty() {
     return Container(
       height: widget.height,

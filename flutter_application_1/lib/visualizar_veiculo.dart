@@ -1,46 +1,68 @@
+// Importa pacote Flutter Material Design
 import 'package:flutter/material.dart';
 
+// Importa database helper para operações no BD
 import 'data/database_helper.dart';
+// Importa modelo de car
 import 'models/car.dart';
+// Importa modelo de gasto
 import 'models/gasto.dart';
+// Importa funções de lógica de gastos
 import 'services/expense_logic.dart';
+// Importa serviço de mídia
 import 'services/media_service.dart';
+// Importa widget para exibir imagens
 import 'widgets/image_display_widget.dart';
+// Importa funções de formatação
 import 'utils/formatters.dart';
 
+// Classe que visualiza detalhes de um veículo com seus gastos mensais - StatefulWidget
 class VisualizarVeiculoPage extends StatefulWidget {
   const VisualizarVeiculoPage({super.key, required this.car});
 
+  // Carro a ser exibido
   final Car car;
 
   @override
   State<VisualizarVeiculoPage> createState() => _VisualizarVeiculoPageState();
 }
 
+// Estado da página
 class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
+  // Mapa que agrupa gastos por mês
   final Map<String, List<Gasto>> _gastosPorMes = {};
+  // Carro atual (pode ser atualizado)
   Car? _currentCar;
+  // Mês selecionado para exibir gastos
   String? _mesSelecionado;
+  // Total de gastos do mês selecionado
   double _monthlyTotal = 0.0;
+  // Custo médio por quilômetro
   double _costPerKm = 0.0;
+  // Flag de carregamento
   bool _loading = true;
 
+  // Chamado ao inicializar o widget
   @override
   void initState() {
     super.initState();
     _loadGastos();
   }
 
+  // Método que carrega os gastos do carro do BD
   Future<void> _loadGastos() async {
     if (widget.car.id == null) return;
 
+    // Sincroniza métricas do carro (km, total de gastos)
     final refreshedCar = await DatabaseHelper.instance.syncCarMetrics(
       widget.car.id!,
       referenceDate: DateTime.now(),
     );
+    // Obtém todos os gastos do carro
     final gastos = await DatabaseHelper.instance.getGastosByCarId(
       widget.car.id!,
     );
+    // Agrupa gastos por mês
     final gastosPorMes = <String, List<Gasto>>{};
     for (final gasto in gastos) {
       final date = DateTime.tryParse(gasto.data);
@@ -50,29 +72,36 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
       gastosPorMes.putIfAbsent(key, () => []).add(gasto);
     }
 
+    // Ordena meses em ordem decrescente
     final sortedKeys = gastosPorMes.keys.toList()
       ..sort((a, b) => b.compareTo(a));
+    // Define o mês selecionado (o mais recente ou mantém seleção anterior)
     final mesSelecionado =
         _mesSelecionado != null && gastosPorMes.containsKey(_mesSelecionado)
         ? _mesSelecionado
         : (sortedKeys.isNotEmpty ? sortedKeys.first : null);
+    // Obtém gastos do mês selecionado
     final gastosDoMesSelecionado = mesSelecionado == null
         ? <Gasto>[]
         : gastosPorMes[mesSelecionado] ?? <Gasto>[];
+    // Calcula total do mês selecionado
     final totalMonthly = gastosDoMesSelecionado.fold<double>(
       0.0,
       (sum, gasto) => sum + gasto.valor,
     );
+    // Calcula total de todos os gastos
     final totalSpent = gastos.fold<double>(
       0.0,
       (sum, gasto) => sum + gasto.valor,
     );
+    // Calcula custo médio por km
     final costPerKm = calculateCostPerKm(
       totalSpent: totalSpent,
       initialKm: refreshedCar.kmInicial,
       currentKm: refreshedCar.km,
     );
 
+    // Atualiza estado com os dados carregados
     setState(() {
       _currentCar = refreshedCar;
       _gastosPorMes
@@ -85,11 +114,13 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
     });
   }
 
+  // Método que formata a chave do mês para exibição legível
   String _formatarMes(String key) {
     if (key == 'sem-data') {
       return 'Sem data';
     }
 
+    // Separa ano e mês da chave (formato YYYY-MM)
     final parts = key.split('-');
     if (parts.length != 2) {
       return key;
@@ -101,6 +132,7 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
     return '${_nomeMes(date.month)} ${date.year}';
   }
 
+  // Método que retorna o nome do mês em português
   String _nomeMes(int mes) {
     const nomes = [
       'Janeiro',
@@ -119,15 +151,18 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
     return nomes[mes - 1];
   }
 
+  // Método que atualiza a imagem do carro
   Future<void> _updateCarImageFromMedia(String mediaPath) async {
     if (!mounted) return;
 
+    // Persiste o arquivo de mídia
     final savedPath = await MediaService.persistMediaFile(
       mediaPath,
       subFolder: 'cars',
     );
     if (savedPath == null) return;
 
+    // Atualiza o carro com a nova imagem
     final updatedCar = (_currentCar ?? widget.car).copy(image: savedPath);
     await DatabaseHelper.instance.updateCar(updatedCar);
 
@@ -143,12 +178,14 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
     );
   }
 
+  // Método que mostra modal para trocar a foto do carro
   Future<void> _changeCarImage() async {
     final sheet = showModalBottomSheet<void>(
       context: context,
       builder: (sheetContext) => SafeArea(
         child: Wrap(
           children: [
+            // Opção tirar foto com câmera
             ListTile(
               leading: const Icon(Icons.camera_alt, color: Colors.redAccent),
               title: const Text('Tirar foto'),
@@ -161,6 +198,7 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
                 }
               },
             ),
+            // Opção escolher foto da galeria
             ListTile(
               leading: const Icon(Icons.photo_library, color: Colors.redAccent),
               title: const Text('Escolher da galeria'),
@@ -181,6 +219,7 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
     await sheet;
   }
 
+  // Método que pede confirmação antes de deletar um gasto
   Future<void> _confirmDeleteGasto(Gasto gasto) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -200,11 +239,14 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
       ),
     );
 
+    // Se não confirmou, retorna
     if (confirmed != true) return;
     if (gasto.id == null) return;
 
+    // Deleta o gasto
     await DatabaseHelper.instance.deleteGasto(gasto.id!);
 
+    // Sincroniza as métricas do carro
     final carId = _currentCar?.id ?? widget.car.id;
     if (carId != null) {
       await DatabaseHelper.instance.syncCarMetrics(
@@ -221,6 +263,7 @@ class _VisualizarVeiculoPageState extends State<VisualizarVeiculoPage> {
       ),
     );
 
+    // Recarrega os gastos
     await _loadGastos();
   }
 

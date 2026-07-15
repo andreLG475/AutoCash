@@ -1,12 +1,20 @@
+// Importa o pacote principal do Flutter para Material Design
 import 'package:flutter/material.dart';
+// Importa serviços de entrada formatada
 import 'package:flutter/services.dart';
+// Importa I/O universal para operações com arquivos
 import 'package:universal_io/io.dart';
 
+// Importa o helper do banco de dados
 import 'data/database_helper.dart';
+// Importa o modelo de dados de carro
 import 'models/car.dart';
+// Importa o serviço de mídia
 import 'services/media_service.dart';
+// Importa funções de formatação
 import 'utils/formatters.dart';
 
+// Classe CadastroVeiculosPage que estende StatefulWidget
 class CadastroVeiculosPage extends StatefulWidget {
   const CadastroVeiculosPage({super.key});
 
@@ -14,18 +22,29 @@ class CadastroVeiculosPage extends StatefulWidget {
   State<CadastroVeiculosPage> createState() => _CadastroVeiculosPageState();
 }
 
+// Estado da classe CadastroVeiculosPage
 class _CadastroVeiculosPageState extends State<CadastroVeiculosPage> {
+  // Chave de validação do formulário
   final _formKey = GlobalKey<FormState>();
+  // Controlador para a marca do carro
   final _marcaController = TextEditingController();
+  // Controlador para o modelo do carro
   final _modeloController = TextEditingController();
+  // Controlador para o ano do carro
   final _anoController = TextEditingController();
+  // Controlador para a quilometragem
   final _kmController = TextEditingController();
+  // Arquivo da foto do carro
   File? _carPhotoFile;
+  // Caminho da foto (pode ser data:image ou caminho de arquivo)
   String? _carPhotoPath;
+  // Bytes da imagem decodificados (para imagens em base64)
   Uint8List? _carPhotoBytes;
 
+  // Método chamado quando o widget é removido
   @override
   void dispose() {
+    // Descarta todos os controladores
     _marcaController.dispose();
     _modeloController.dispose();
     _anoController.dispose();
@@ -33,6 +52,7 @@ class _CadastroVeiculosPageState extends State<CadastroVeiculosPage> {
     super.dispose();
   }
 
+  // Método que abre um modal para selecionar ou tirar foto
   Future<void> _handlePhotoUpload() async {
     showModalBottomSheet(
       context: context,
@@ -47,6 +67,7 @@ class _CadastroVeiculosPageState extends State<CadastroVeiculosPage> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
+              // Opção tirar foto com câmera
               ListTile(
                 leading: const Icon(Icons.camera_alt, color: Colors.blue),
                 title: const Text('Tirar Foto'),
@@ -55,6 +76,7 @@ class _CadastroVeiculosPageState extends State<CadastroVeiculosPage> {
                   _takePhoto();
                 },
               ),
+              // Opção escolher foto da galeria
               ListTile(
                 leading: const Icon(Icons.image, color: Colors.green),
                 title: const Text('Escolher Foto da Galeria'),
@@ -63,6 +85,7 @@ class _CadastroVeiculosPageState extends State<CadastroVeiculosPage> {
                   _pickPhoto();
                 },
               ),
+              // Se há foto, mostra opção de remover
               if (_carPhotoFile != null)
                 ListTile(
                   leading: const Icon(Icons.close, color: Colors.red),
@@ -83,6 +106,7 @@ class _CadastroVeiculosPageState extends State<CadastroVeiculosPage> {
     );
   }
 
+  // Método que tira uma foto com a câmera
   Future<void> _takePhoto() async {
     final savedPath = await MediaService.takePhotoFromCamera();
     if (savedPath != null) {
@@ -97,6 +121,7 @@ class _CadastroVeiculosPageState extends State<CadastroVeiculosPage> {
     }
   }
 
+  // Método que seleciona uma foto da galeria
   Future<void> _pickPhoto() async {
     final savedPath = await MediaService.pickPhotoFromGallery();
     if (savedPath != null) {
@@ -111,15 +136,16 @@ class _CadastroVeiculosPageState extends State<CadastroVeiculosPage> {
     }
   }
 
+  // Método que decodifica bytes de uma imagem em base64
   Uint8List? _decodePhotoBytes(String? imagePath) {
     if (imagePath == null || !imagePath.startsWith('data:image')) {
       return null;
     }
-
     final uri = Uri.parse(imagePath);
     return uri.data?.contentAsBytes();
   }
 
+  // Método que mostra mensagem de sucesso
   void _showSuccessMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -130,9 +156,12 @@ class _CadastroVeiculosPageState extends State<CadastroVeiculosPage> {
     );
   }
 
+  // Método que salva o novo carro no banco de dados
   Future<void> _saveCar() async {
+    // Valida o formulário
     if (!_formKey.currentState!.validate()) return;
 
+    // Cria um novo objeto Car
     final carro = Car(
       marca: capitalizeFirst(_marcaController.text),
       modelo: capitalizeFirst(_modeloController.text),
@@ -143,9 +172,11 @@ class _CadastroVeiculosPageState extends State<CadastroVeiculosPage> {
       gastos: 0.0,
     );
 
+    // Insere o carro no banco de dados
     await DatabaseHelper.instance.insertCar(carro);
     if (!mounted) return;
 
+    // Mostra mensagem de sucesso
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text(
@@ -157,9 +188,11 @@ class _CadastroVeiculosPageState extends State<CadastroVeiculosPage> {
       ),
     );
 
+    // Volta para a página anterior
     Navigator.pop(context);
   }
 
+  // Constrói a interface da página
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -417,6 +450,7 @@ class _CadastroVeiculosPageState extends State<CadastroVeiculosPage> {
     );
   }
 
+  // Widget que constrói um campo de entrada com rótulo
   Widget _buildLabelAndField({
     required TextEditingController controller,
     required String label,
@@ -442,10 +476,12 @@ class _CadastroVeiculosPageState extends State<CadastroVeiculosPage> {
           keyboardType: keyboardType,
           inputFormatters: inputFormatters,
           maxLength: maxLength,
+          // Validação do campo
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
               return 'Campo obrigatório';
             }
+            // Para campos numéricos, verifica se é número válido
             if ((label == 'Ano:' || label == 'Quilometragem do veículo:') &&
                 int.tryParse(value.trim()) == null) {
               return 'Digite um número válido';
